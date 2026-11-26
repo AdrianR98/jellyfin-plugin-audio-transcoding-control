@@ -1,5 +1,14 @@
 # Herkunft und Lizenzprüfung
 
+## Distribution 0.2.0
+
+Das M2-Paket enthält ausschließlich die eigene Plugin-DLL mit eigener eingebetteter Konfigurationsseite, den vollständigen GPL-3.0-Lizenztext und diese Hinweise sowie Paketmetadaten. Keine Host-/Framework-/Test-DLLs werden mitgeliefert. Keine neuen Paketabhängigkeiten und keine Codeübernahme aus DirectPlayForce. Die native Seite verwendet eigenständig die regulären Jellyfin-API-/Dashboard-Muster. Die früheren untenstehenden Vorveröffentlichungsnotizen sind historische Prüfstände; der tatsächliche Paketinhalt wurde für 0.2 erneut geprüft.
+
+
+## Ergänzung M1
+
+Die echte `Jellyfin.Api.dll` wird als externe Host-Assembly aus dem offiziellen portablen Windows-Paket 10.11.11 referenziert. Es wurde kein DTO-/API-Quellcode kopiert. Das Archiv samt eigenem FFmpeg bleibt ausschließlich unter `.local/`; keine Server-/FFmpeg-Binärdatei wird im Repository versioniert oder mit der Plugin-DLL ausgeliefert. Quellcommit, Download, Hashes und Identitätsbefund stehen in [m1-verification.md](docs/m1-verification.md). Die bisherigen Hinweise zu unterschiedlichen Root-/Paketlizenzangaben gelten weiterhin. Vor einer späteren Distribution ist deren tatsächlicher Inhalt erneut zu prüfen; M1 veröffentlicht kein Paket.
+
 Prüfstand: 26.11.2026. Die Prüfung erfolgte vor einer Codeübernahme. Projektlizenz: **GPL-3.0-only**. Der vollständige Lizenztext in `LICENSE` stammt unverändert aus dem offiziellen Template. Diese Bestandsaufnahme ersetzt keine umfassende Prüfung einer späteren Distribution.
 
 ## Offizielles Jellyfin-Plugin-Template

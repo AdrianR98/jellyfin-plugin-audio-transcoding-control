@@ -22,6 +22,7 @@ public sealed class MvcSeamTests
     public void RegistratorAddsScopedFilterAfterHostConfiguration()
     {
         var services = new ServiceCollection();
+        HostFixture.RegisterUnusedHostServices(services);
         new PluginServiceRegistrator().RegisterServices(services, null!);
         services.Configure<MvcOptions>(options => options.Filters.Clear());
         using var provider = services.BuildServiceProvider();
@@ -74,7 +75,7 @@ public sealed class MvcSeamTests
         var context = new ActionExecutingContext(action, [], new Dictionary<string, object?>(), new object());
         var expected = new InvalidOperationException("test sentinel");
         var calls = 0;
-        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => new PlaybackInfoActionFilter().OnActionExecutionAsync(context, () =>
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => new PlaybackInfoActionFilter(null!, null!, null!, null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackInfoActionFilter>.Instance).OnActionExecutionAsync(context, () =>
         {
             calls++;
             throw expected;
@@ -95,6 +96,7 @@ public sealed class MvcSeamTests
     private static TestServer CreateServer(bool mutationProbe) => new(new WebHostBuilder()
         .ConfigureServices(services =>
         {
+            HostFixture.RegisterUnusedHostServices(services);
             new PluginServiceRegistrator().RegisterServices(services, null!);
             services.AddControllers().AddApplicationPart(typeof(ProbeController).Assembly);
             if (mutationProbe)

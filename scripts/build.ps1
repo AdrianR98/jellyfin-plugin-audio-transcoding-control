@@ -5,6 +5,9 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $repositoryRoot
 try {
+    $apiPath = Join-Path $repositoryRoot '.local/server/jellyfin/Jellyfin.Api.dll'
+    if (-not (Test-Path -LiteralPath $apiPath)) { throw 'Run scripts/prepare-test-server.ps1 first.' }
+    & (Join-Path $PSScriptRoot 'prepare-test-server.ps1')
     dotnet restore Jellyfin.Plugin.AudioTranscodingControl.sln --locked-mode
     if ($LASTEXITCODE -ne 0) { throw 'Locked restore failed.' }
     dotnet build Jellyfin.Plugin.AudioTranscodingControl.sln --configuration Release --no-restore

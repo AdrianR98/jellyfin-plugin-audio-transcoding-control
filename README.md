@@ -1,53 +1,69 @@
 # Jellyfin Audio Transcoding Control
 
-Eigenständiges Server-Plugin zur geplanten gerätespezifischen Steuerung von Audio-Transcoding. Ziel ist unter anderem AC3 5.1 bis 640 kbit/s für inkompatible Mehrkanaltonspuren bei möglichst kopiertem Video und unveränderten offiziellen Clients.
+Experimental server plugin for **Jellyfin 10.11.11 / .NET 9**, version **0.2.0.0**. Ordered device/user rules narrow eligible native PlaybackInfo audio offers to AC3, with configurable channel and bitrate ceilings. New installations are disabled by default.
 
-**Stand: M0, Version 0.0.1, unveröffentlicht.** Das Plugin enthält einen kompilierbaren Einstiegspunkt, deaktivierte Konfiguration und einen vollständig durchleitenden MVC-Filter. Es verändert noch keine Wiedergabe, auch wenn `IsEnabled` gesetzt wird. Es gibt keine Konfigurationsoberfläche, Regelengine, Installation oder Veröffentlichung.
+## Install or update from the plugin catalog
 
-## Zielumgebung
+1. In Jellyfin Dashboard → Plugins → Repositories, add **Audio Transcoding Control** with this repository URL:
 
-- Jellyfin Server **10.11.11**, nativ unter Windows; Plugin-Zielframework **net9.0**.
-- Jellyfin Android TV **0.20.0** auf Amazon Fire TV Stick.
-- XGIMI Titan Noir Max → HDMI ARC → Sony STR-DH520, laut Projektvorgabe; Hardwarewirkung nicht überprüft.
-- SDK-Basis **9.0.201**, NuGet `Jellyfin.Controller` und `Jellyfin.Model` exakt **10.11.11**. [Versionsbelege](docs/sources.md#s01).
+   ```text
+   https://raw.githubusercontent.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/main/manifest.json
+   ```
 
-## Lokal bauen und prüfen
+2. Refresh the catalog, select **Jellyfin Audio Transcoding Control**, and install **0.2.0.0**. For an existing installation, use Jellyfin's regular plugin update mechanism.
+3. Restart Jellyfin yourself when prompted. Open the plugin's configuration page in Dashboard → Plugins.
+4. Keep the master switch off while selecting the intended devices and users. Enable the rule and master switch, then save. Configuration and logging changes apply to the next PlaybackInfo request without another restart.
 
-Ein vorhandenes .NET-9-SDK und Zugriff auf NuGet bzw. ein gefüllter Paketcache werden vorausgesetzt. Die Skripte installieren kein SDK, keinen Server und kein FFmpeg. Restore lädt ausschließlich Build-/Testabhängigkeiten in den normalen NuGet-Cache.
+[Source repository](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control) · [Pre-release and ZIP](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/tag/v0.2.0) · [Changelog](CHANGELOG.md)
+
+## Configure
+
+The native English/German dashboard page supports creating, editing, duplicating, deleting, enabling and reordering rules. Device and user lists come from authenticated Jellyfin APIs. Unavailable saved selections remain visible and selected until explicitly removed. They never become “All”. Duplicate rules start disabled.
+
+Within each axis, selections use **OR**; device and user axes use **AND**. The **first enabled matching rule wins**, without combining policies or trying later rules after a policy safety bypass. Empty selections match nobody unless the corresponding **All devices / All users** option is explicitly enabled. Invalid or ambiguous authenticated identities always bypass the plugin.
+
+Each rule supports AC3 only, 1/2/6 maximum channels, supported AC3 bitrates up to 640000 bit/s, compatible AC3 preservation, mono/stereo preservation and detailed diagnostics. Default limits are six channels and 640000 bit/s; both preservation options default on. Overlap and full-shadow warnings explain priority conflicts. For exceptionally large selections, an overlap warning may be shown without proving full shadowing.
+
+Legacy 0.1 configurations migrate once to schema 2, retaining the master switch, rule switch and exact device/user selections. A partially configured legacy rule remains safely nonmatching. See [M2 behavior and diagnostics](docs/m2.md).
+
+## Diagnostics & Logging
+
+The page offers Error, Warning, Information (default), Debug and Trace, with separate rule matching, profile changes, read-only response analysis and performance switches. The development preset enables Debug and all four categories; per-rule detailed diagnostics must also be enabled. Trace adds evaluated rule details and controlled profile snapshots.
+
+Logs appear in **Dashboard → Logs**, in Jellyfin's configured log directory, under `Jellyfin.Plugin.AudioTranscodingControl` categories. Each request has one correlation ID and stable event IDs. No global logging files are modified. When the native logger filters Debug/Trace but accepts Information, diagnostics are emitted as **Information with their original Debug/Trace level explicitly labeled**. Global filters stricter than Information can still suppress them. Settings are refreshed on the next request.
+
+Device/user references are pseudonymized per server process. Tokens, authenticated URLs, media paths, full request/response objects and exception messages are excluded. Profile output uses an allowlisted representation; stack traces contain method names without file paths. A native PlaybackInfo offer does **not** prove client selection or actual FFmpeg execution.
+
+## Known limitations
+
+- Experimental and pinned to Jellyfin 10.11.11, including the examined native API source version. Other server versions are not supported.
+- Requires an accessible local video, explicit unique source and selected known audio track, existing AC3-capable HLS TS/MP4 profiles and native audio-transcoding permission. Live/remote sources, malformed profiles, missing metadata and tighter client channel limits safely bypass the policy.
+- Profiles are deeply copied. Existing video constraints, subtitle capabilities, stream-copy restrictions and user permissions remain authoritative. Disabling compatible-AC3 preservation additionally narrows native audio-copy permission; it does not enable video conversion. No upmix is requested.
+- The plugin does not rewrite direct streaming requests. A client bypassing PlaybackInfo or its generated TranscodingUrl and requesting AAC can still receive AAC. Investigating the actual Fire TV request path remains necessary.
+- AC3 does not preserve Atmos metadata. Fire TV playback, receiver output, seeking, track switching, HDR and Dolby Vision preservation remain **unverified on the real playback chain**. Video copy alone proves none of these.
+- M2's native catalog update, dashboard interaction on desktop/mobile and actual configuration persistence on the user's server are to be verified by the user. No production installation, changes or restart were performed during M2.
+
+## Disable, uninstall and roll back
+
+Turn off the master switch or the individual rule and save to stop applying it to new PlaybackInfo requests. In Dashboard → Plugins, uninstall this plugin and restart Jellyfin when prompted. Existing sessions may continue using already generated URLs.
+
+Before updating, back up this plugin's own XML configuration from the server's `plugins/configurations` directory, normally `Jellyfin.Plugin.AudioTranscodingControl.xml`. To roll back, uninstall 0.2 through the native mechanism, install catalog version **0.1.0.0**, and restore your own backed-up 0.1 configuration while Jellyfin is stopped. Schema 2 rules cannot be read by 0.1; restoring the old file is required to recover the previous pair. Do not modify other plugins or server configuration. Keep backups and private identifiers outside Git.
+
+## Build and checks
+
+The portable download supplies a version-checked compile-time API reference under ignored `.local/`; it is not a required production environment or an additional installed server. No server is started by these commands:
 
 ```powershell
+./scripts/prepare-test-server.ps1
 ./scripts/build.ps1 -VerifyDeterminism
 ./scripts/test.ps1
+./scripts/package.ps1 -OutputDirectory ./work/package
 ```
 
-Gleichwertige Einzelbefehle im Repository-Verzeichnis:
+SDK 9.0.201 and locked dependencies are retained. The release ZIP contains only the plugin DLL (including its embedded dashboard), LICENSE, THIRD-PARTY-NOTICES.md and package-manifest.json. It excludes Jellyfin core DLLs, test libraries and private configuration. MD5 is used by the Jellyfin catalog; a SHA256 sidecar is also supplied. ZIP reproducibility is checked in the same build environment.
 
-```powershell
-dotnet restore Jellyfin.Plugin.AudioTranscodingControl.sln --locked-mode
-dotnet build Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-restore
-dotnet test Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-build --no-restore
-```
+Existing M1 controller/FFmpeg evidence is historical: [M1 verification](docs/m1-verification.md). Current checks and event definitions: [M2](docs/m2.md). No CI or browser testing framework is included.
 
-Die Plugin-DLL entsteht unter `src/Jellyfin.Plugin.AudioTranscodingControl/bin/Release/net9.0/`. Jellyfin-Laufzeit-DLLs werden vom Plugin-Ausgabeverzeichnis ausgeschlossen. Das Build-Skript prüft dies. Keine dieser Dateien wird automatisch in einen Server kopiert.
+## License
 
-## Ergebnis und Dokumentation
-
-- [Architektur und Regelvertrag](docs/architecture.md)
-- [Versionsgebundene Playback-Pipeline](docs/playback-pipeline.md)
-- [Machbarkeit: Ansätze A, B und C](docs/technical-feasibility.md)
-- [M1-Plan und spätere Meilensteine](docs/roadmap.md)
-- [Gezielter Testplan](docs/test-plan.md)
-- [Tatsächlicher Build- und Prüfstatus](docs/build-status.md)
-- [Quellcodebelege mit Commit- und Zeilenlinks](docs/sources.md)
-
-Bevorzugter Ansatz für M1: ein global registrierter Action-Filter passt **vor** `MediaInfoController.GetPostedPlaybackInfo` ausschließlich das anfrageeigene `DeviceProfile` eines passenden Geräts an. Jellyfin berechnet Entscheidung, Antwort und Streaming-URLs weiter selbst. Die Schlussfolgerung ist durch Quellcode und isolierte Tests gestützt; eine vollständige Jellyfin-/Geräteintegration wurde nicht durchgeführt.
-
-`-codec:v:0 copy` allein beweist weder HDR- noch Dolby-Vision-Erhaltung. Container, Metadaten, Segmentierung und die gesamte Wiedergabekette bleiben zu prüfen.
-
-## Struktur und Lizenz
-
-`src/` enthält das Plugin, `tests/` isolierte MVC- und StreamBuilder-Tests, `docs/` die Analyse, `scripts/` lokale Prüfungen und `assets/` den vorgesehenen Platz für eigene Grafiken.
-
-GPL-3.0-only; technische Grundlage ist das offizielle Jellyfin-Plugin-Template. [Herkunft und Lizenzprüfung](THIRD-PARTY-NOTICES.md). Aus DirectPlayForce wurde kein Code übernommen. `manifest.json` ist eine unveröffentlichte Katalogvorlage mit leerem `versions`-Array; kein installierbares Release.
-
-M0 endet mit dem Foundation-Commit. M1 beginnt erst nach ausdrücklicher Freigabe.
+**GPL-3.0-only**, see [LICENSE](LICENSE) and [third-party notices](THIRD-PARTY-NOTICES.md). Host/framework and development dependencies are not bundled in the plugin ZIP. No DirectPlayForce code was copied.

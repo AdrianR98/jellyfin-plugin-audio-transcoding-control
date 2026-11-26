@@ -1,5 +1,7 @@
 # Versionsgebundene Quellen
 
+M1 ergänzt die bestehenden Quellen um das offizielle portable 10.11.11-Paket und tatsächliche Laufzeitbelege: [Binäridentität, Hashes und nativer Servernachweis](m1-verification.md). Der in dessen Jellyfin.Api-Assembly vermerkte Source-Commit ist identisch mit dem hier analysierten Server-Commit. Die M0-Quellen wurden nicht erneut vollständig recherchiert.
+
 Geprüft am 26.11.2026. Analysiert wurden lokale, flache Git-Checkouts der folgenden unveränderlichen Commits. Keine Analyse gegen bewegliches `master`/`main` als Versionsbeleg.
 
 | Quelle | Ref bei Abruf | Vollständiger Commit |

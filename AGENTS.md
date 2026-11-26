@@ -1,25 +1,19 @@
-# Projektkontext
+# Project context
 
-- Name/Namespace: Jellyfin Audio Transcoding Control / `Jellyfin.Plugin.AudioTranscodingControl`.
-- Stand: M0, 0.0.1, unveröffentlicht. Keine aktive Regelengine; Filter leitet ausnahmslos durch. M1 braucht ausdrückliche Freigabe.
-- Ziel: Jellyfin 10.11.11 (`net9.0`), Android TV 0.20.0, Windows. Gepinnte Quellen und Navigationslinks: `docs/sources.md`, `docs/source-lock.json`.
-- Einstieg für Folgeschritte: zuerst die zum Auftrag passende Dokumentation lesen; kein erneutes Vollscan aller Upstreams ohne Versionswechsel oder konkreten Widerspruch.
-- Entscheidung: A bevorzugt, anfrageeigenes DeviceProfile vor `GetPostedPlaybackInfo` in globalem `IAsyncActionFilter`; Registrierung über `IPluginServiceRegistrator` und `PostConfigure<MvcOptions>`. Keine direkten Jellyfin.Api-Referenzen im M0-Projekt; M1 braucht einen abgesicherten DTO-Adapter.
-- Nicht passende Geräte, deaktiviertes Plugin, unbekannte DTO-Formen und interne Vorbereitungsfehler müssen unverändert durchlaufen. Vor Mutation vollständig vorbereiten und validieren. `next()` exakt einmal; Controllerfehler nicht verschlucken oder durch erneuten Aufruf wiederholen.
-- Profile tief kopieren; keine global gespeicherten Capabilities mutieren. Keine Rechte, Video-/HDR- oder Untertitelgrenzen lockern. Stereo nicht hochmischen. Codec-Reihenfolge allein genügt nicht, siehe Analyse.
-- Keine Core-/Client-/FFmpeg-Manipulation, kein Harmony. Keine produktive Installation, zusätzlichen Komponenten oder Veröffentlichung ohne passenden Auftrag. Keine Release-Workflows in M0.
-- Logging nur strukturierte erlaubte Diagnosefelder; niemals Header, Claims-Dumps, URLs, Tokens, Pfade oder komplette DTOs protokollieren.
-- GPL-3.0-only. Template-Herkunft in `THIRD-PARTY-NOTICES.md` erhalten. DirectPlayForce ohne vollständige Lizenzgrundlage nur als gelesene Referenz; keinen Code kopieren.
-
-## Lokale Befehle
+- Jellyfin Audio Transcoding Control, namespace `Jellyfin.Plugin.AudioTranscodingControl`, GPL-3.0-only. Keep template attribution and THIRD-PARTY-NOTICES.md.
+- Current milestone M2 / version 0.2.0.0. Read README.md and docs/m2.md for current behavior. Historical M1 evidence: docs/m1-verification.md. Pinned sources: docs/source-lock.json.
+- Jellyfin 10.11.11 / net9.0, SDK 9.0.201. Real Jellyfin.Api reference from verified ignored .local/server; no host/test DLLs in release output. Native API assembly version differs from server version; exact source/host checks are intentional.
+- Ordered AND/OR explicit-scope rules; first enabled match wins, no later fallback or implicit All. New installs disabled. Preserve migration selections and activation. Unknown identities/schema/profiles must safely bypass.
+- Keep native PlaybackInfo POST action filter and request-local deep copying. Do not loosen user/video/subtitle restrictions. Native next() exactly once; never swallow controller errors. No Core/client/FFmpeg patching.
+- Diagnostics use native ILogger and safe structured fields only. Never log tokens, URLs, raw device/user IDs, media paths, full DTOs or exception messages. Do not change global logging files. Read docs/m2.md for the labeled Information fallback for Debug/Trace.
+- User authorized the public v0.2.0 pre-release/catalog update and reconciliation of PR #1; preserve published 0.1 tag/asset/catalog entry. No Actions/CI or new browser framework. Retain existing tests and add only focused risk checks. User performs real native update/dashboard/hardware tests.
+- Do not install, configure or restart the production Jellyfin server. Private configuration/logs and generated artifacts stay ignored under .local/ or work/.
 
 ```powershell
+./scripts/prepare-test-server.ps1
 ./scripts/build.ps1 -VerifyDeterminism
 ./scripts/test.ps1
-# Einzelbefehle:
-dotnet restore Jellyfin.Plugin.AudioTranscodingControl.sln --locked-mode
-dotnet build Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-restore
-dotnet test Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-build --no-restore
+./scripts/package.ps1 -OutputDirectory ./work/package
 ```
 
-SDK 9.0.201 laut `global.json`; Lockfiles versionieren. Abhängigkeiten nur gezielt aktualisieren. Tests auf risikobehaftete Logik und Host-Verträge konzentrieren, keine Getter-/Setter-Matrix. MVC-Probe-DTO und Transcoder-Dummy sind kein vollständiger Server-/FFmpeg-Nachweis. Nach relevanten Änderungen vorhandene gezielte Prüfungen laufen lassen. `bin/`, `obj/`, `TestResults/` nicht committen.
+The build's portable reference is not a separately installed production environment. Do not repeat full upstream analysis or native FFmpeg tests without a concrete need. Legacy manual practice scripts/docs describe 0.1; prefer the current native dashboard/catalog for 0.2.

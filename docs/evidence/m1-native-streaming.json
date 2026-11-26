@@ -1,0 +1,62 @@
+{
+  "serverVersion": "10.11.11",
+  "pluginId": "c48a5098-04e0-4de5-a46c-8adae788f91b",
+  "port": 18967,
+  "syntheticMedia": true,
+  "checks": {
+    "nativePluginLoader": "Active",
+    "firstPlaybackInfoAc3": true,
+    "playbackInfoProfileInfluencesNativeDecision": true,
+    "nativePlaybackParameters": {
+      "AudioCodec": [
+        "ac3"
+      ],
+      "AudioBitrate": [
+        "640000"
+      ],
+      "TranscodingMaxAudioChannels": [
+        "6"
+      ],
+      "VideoCodec": [
+        "hevc,h264"
+      ],
+      "SegmentContainer": [
+        "ts"
+      ]
+    },
+    "segmentProbe": {
+      "audio": {
+        "codec_name": "ac3",
+        "codec_type": "audio",
+        "channels": 6,
+        "bit_rate": "640000"
+      },
+      "video": {
+        "codec_name": "hevc",
+        "codec_type": "video",
+        "width": 3840,
+        "height": 2160
+      }
+    },
+    "nativeFfmpegArguments": "-codec:v:0 copy -codec:a:0 ac3 -ac 6 -ab 640000",
+    "ac3OriginalDirectPlay": true,
+    "stereoDirectPlay": true,
+    "repeatedPlaybackInfoAc3": true,
+    "explicitTranscodingFalseRetainsNativeBehavior": true,
+    "pluginDecisionLogged": true,
+    "unmatchedDeviceNativeDirectPlay": true,
+    "directStreamingBypassesPlaybackInfo": {
+      "codec_name": "aac",
+      "channels": 6
+    }
+  },
+  "limits": [
+    "Synthetic request shaped like the client; no Android TV / Fire TV app was operated.",
+    "Synthetic 4K SDR HEVC signal; no HDR, Dolby Vision or Atmos hardware verification.",
+    "Direct streaming requests that bypass PlaybackInfo are not rewritten by this plugin."
+  ],
+  "outcome": "native-server-playback-and-ffmpeg-verified",
+  "checkedOn": "2026-11-26",
+  "pluginDllSha256": "F0C0EEBE936630F7A5E756B04FA323691A0013CE3C70C6EE3EC0CF4B6860DB0F",
+  "baselineCommit": "202fd1eda93f978b2452adaa0eeb28837d46f62a"
+}

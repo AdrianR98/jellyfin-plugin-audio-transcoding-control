@@ -1,5 +1,13 @@
 # Architektur
 
+## M1: implementierter Stand
+
+Der aktuelle Prototyp ist in [m1-verification.md](m1-verification.md) beschrieben und serverseitig bis FFmpeg nachgewiesen. Eine einzelne aktivierbare Regel verlangt exakte Device-ID **und** Benutzer-ID; globale Regeln, Namen und Prioritäten mehrerer Regeln bleiben spätere Erweiterungen. Der folgende M0-Vertrag bleibt als Herkunft der Entscheidung und als weiterführender Entwurf erhalten.
+
+Umgesetzt sind der native `PlaybackInfoDto`-Zugriff vor der echten Controller-Action, Host-/API-Commitprüfung, Request-Konfigurationssnapshot, Rechte-/Encoder-/Quellenauswertung, tiefe Profilkopie und AC3-Transformation für geeignete 6-/8-Kanalspuren. Die einzige Requestmutation ist der Austausch von `DeviceProfile`. Mono/Stereo, ungeeignete Profile und Nichttreffer bleiben unverändert. Die native Metadatenabfrage darf wie die Action probieren; ein noch nicht vollständig gescannter lokaler Titel wird dadurch schon beim ersten PlaybackInfo-Aufruf korrekt behandelt.
+
+Die API-Assembly wird aus einem gepinnten portablen 10.11.11-Paket referenziert und nicht mitgeliefert. Keine DTO-Nachbildung und kein Reflection-Adapter. Direkte Streamingrequests ohne PlaybackInfo bleiben außerhalb des Filters; ein AAC-Kontrollstream ist als Grenze praktisch belegt. Der tatsächliche Android-TV-Client und die HDMI-Kette bleiben ungetestet.
+
 ## M0-Entscheidung und Geltungsbereich
 
 **Entscheidung ADR-001:** Ansatz A wird für M1 bevorzugt: das anfrageeigene `DeviceProfile` vor Ausführung von `MediaInfoController.GetPostedPlaybackInfo` anpassen. Jellyfin bleibt verantwortlich für Medienauswahl, Rechte, Wiedergabeentscheidung, Antwort und URL-Erzeugung. Belege: [S02](sources.md#s02), [S04](sources.md#s04), [S15](sources.md#s15), [S24](sources.md#s24).
@@ -25,7 +33,7 @@ Evidenzbegriffe in dieser Dokumentation:
 
 **Fallback-Vertrag:** Vorbereitungsfehler dürfen keinerlei Mutation zurücklassen. Keine generelle `try/catch`-Hülle um `next()` mit erneuter Action-Ausführung: das würde Seiteneffekte wiederholen. Controllerfehler und Abbruchsignale bleiben erhalten. Für einen Wiedergabefehler nach ausgelieferter Antwort gibt es ohne erneuten Request keinen transparenten Rücksprung. Ein späterer Retry-Fallback braucht einen gesonderten, begrenzten Zustandsvertrag und ist kein M0-Versprechen.
 
-## Regelvertrag — Entwurf, noch keine Datenmodelle implementiert
+## Weiterführender Regelvertrag — M0-Entwurf für spätere Ausbaustufen
 
 | Bereich | Geplante Semantik |
 | --- | --- |

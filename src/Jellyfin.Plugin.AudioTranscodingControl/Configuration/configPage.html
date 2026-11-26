@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Audio Transcoding Control</title></head>
+<body>
+<div id="ATCConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+<style>
+#ATCConfigPage .atc-toolbar{display:flex;flex-wrap:wrap;gap:.5em;align-items:center;margin:.8em 0}
+#ATCConfigPage .atc-card{border:1px solid var(--line-color,rgba(128,128,128,.4));border-radius:.4em;padding:.8em;margin:.6em 0}
+#ATCConfigPage .atc-card[aria-current=true]{border-color:var(--accent,#00a4dc)}
+#ATCConfigPage .atc-card-title{font-weight:600;overflow-wrap:anywhere}
+#ATCConfigPage .atc-picks{min-height:10em;width:100%;max-width:100%}
+#ATCConfigPage fieldset{border:1px solid rgba(128,128,128,.4);padding:1em;margin:1.2em 0;min-width:0}
+#ATCConfigPage .atc-note{white-space:pre-line;overflow-wrap:anywhere;line-height:1.5}
+#ATCConfigPage .atc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17em),1fr));gap:1em}
+#ATCConfigPage [hidden]{display:none!important}
+#ATCConfigPage .atc-warning{border-left:.25em solid #dba440;padding:.6em .9em;margin:.5em 0}
+</style>
+<div data-role="content"><div class="content-primary">
+<form id="ATCForm">
+<h2>Audio Transcoding Control</h2>
+<p class="fieldDescription" data-t="intro">Experimental AC3 policies. The first enabled matching rule wins. No rule combination.</p>
+<div class="selectContainer"><label class="selectLabel" for="atcLanguage" data-t="language">Page language</label><select is="emby-select" id="atcLanguage"><option value="en">English</option><option value="de">Deutsch</option></select></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcMaster"><span data-t="master">Enable audio policies</span></label></div>
+<p id="atcStatus" role="status" aria-live="polite" class="atc-note"></p>
+<h3 data-t="rules">Ordered rules</h3>
+<div class="atc-toolbar"><button is="emby-button" type="button" class="raised" id="atcAdd"><span data-t="add">Add rule</span></button><button is="emby-button" type="button" class="raised" id="atcReload"><span data-t="reload">Reload</span></button></div>
+<div id="atcRules"></div>
+<div id="atcWarnings" role="status" aria-live="polite"></div>
+<fieldset id="atcEditor" hidden><legend data-t="edit">Edit rule</legend>
+<div class="inputContainer"><label class="inputLabel" for="atcName" data-t="name">Rule name</label><input is="emby-input" id="atcName" type="text" maxlength="80"></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcEnabled"><span data-t="enabled">Rule enabled</span></label></div>
+<div class="atc-grid">
+<div><h4 data-t="devices">Devices</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllDevices"><span data-t="allDevices">All devices (explicit)</span></label></div><label for="atcDevices" class="fieldDescription" data-t="deviceHelp">Choose one or more devices. Empty selection never means all.</label><select is="emby-select" id="atcDevices" multiple class="atc-picks" aria-label="Devices"></select></div>
+<div><h4 data-t="users">Users</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllUsers"><span data-t="allUsers">All users (explicit)</span></label></div><label for="atcUsers" class="fieldDescription" data-t="userHelp">Choose one or more users. Device AND user must match.</label><select is="emby-select" id="atcUsers" multiple class="atc-picks" aria-label="Users"></select></div>
+</div>
+<div class="atc-grid">
+<div class="selectContainer"><label class="selectLabel" for="atcCodec" data-t="codec">Target codec</label><select is="emby-select" id="atcCodec"><option value="ac3">AC3 (Dolby Digital)</option></select></div>
+<div class="selectContainer"><label class="selectLabel" for="atcChannels" data-t="channels">Maximum audio channels</label><select is="emby-select" id="atcChannels"><option value="1">1 (Mono)</option><option value="2">2 (Stereo)</option><option value="6">6 (5.1)</option></select></div>
+<div class="selectContainer"><label class="selectLabel" for="atcBitrate" data-t="bitrate">Maximum audio bitrate (bit/s)</label><select is="emby-select" id="atcBitrate"></select></div>
+</div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcPreserve"><span data-t="preserve">Preserve compatible AC3 audio (allow native direct play/copy)</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcStereo"><span data-t="stereo">Preserve mono/stereo sources unchanged</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcRuleDiagnostics"><span data-t="ruleDiagnostics">Enable detailed diagnostics for this rule</span></label></div>
+<p class="fieldDescription" data-t="policyNote">Existing video limits and permissions remain authoritative. Turning off AC3 preservation can force audio re-encoding. AC3 does not retain Atmos.</p>
+</fieldset>
+<fieldset><legend data-t="logging">Diagnostics &amp; Logging</legend>
+<div class="selectContainer"><label class="selectLabel" for="atcLogLevel" data-t="level">Plugin logging level</label><select is="emby-select" id="atcLogLevel"><option>Error</option><option>Warning</option><option>Information</option><option>Debug</option><option>Trace</option></select></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogMatching"><span data-t="matching">Detailed rule matching</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogProfiles"><span data-t="profiles">Device profile changes</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogResponse"><span data-t="response">Playback response analysis (read-only)</span></label></div>
+<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogPerformance"><span data-t="performance">Performance measurements</span></label></div>
+<button is="emby-button" type="button" class="raised" id="atcDebugPreset"><span data-t="debugPreset">Use development Debug preset</span></button>
+<p class="fieldDescription atc-note" data-t="loggingNote">Logs: Jellyfin Dashboard → Logs, in the server's configured log directory. Changes apply to the next request without a restart. If the server filters Debug/Trace, these diagnostics use native Information entries labeled with their original level. Stricter global filters can still suppress messages; no global logging file is changed.</p>
+<p class="fieldDescription" data-t="privacy">No tokens, full stream URLs, media paths or raw device/user identifiers are logged. Stream offers do not prove client use or actual FFmpeg output.</p>
+</fieldset>
+<button is="emby-button" type="submit" class="raised button-submit block" id="atcSave" disabled><span data-t="save">Save configuration</span></button>
+</form>
+</div></div>
+<script>
+(function () {
+    'use strict';
+    const page = document.getElementById('ATCConfigPage');
+    const find = id => page.querySelector('#' + id);
+    const pluginId = 'c48a5098-04e0-4de5-a46c-8adae788f91b';
+    const bitrates = [32000,40000,48000,56000,64000,80000,96000,112000,128000,160000,192000,224000,256000,320000,384000,448000,512000,576000,640000];
+    const words = {
+        en: { intro:'Experimental AC3 policies. The first enabled matching rule wins. No rule combination.', language:'Page language', master:'Enable audio policies', rules:'Ordered rules', add:'Add rule', reload:'Reload', edit:'Edit rule', name:'Rule name', enabled:'Rule enabled', devices:'Devices', users:'Users', allDevices:'All devices (explicit)', allUsers:'All users (explicit)', deviceHelp:'Choose one or more devices. Empty selection never means all.', userHelp:'Choose one or more users. Device AND user must match.', codec:'Target codec', channels:'Maximum audio channels', bitrate:'Maximum audio bitrate (bit/s)', preserve:'Preserve compatible AC3 audio (allow native direct play/copy)', stereo:'Preserve mono/stereo sources unchanged', ruleDiagnostics:'Enable detailed diagnostics for this rule', policyNote:'Existing video limits and permissions remain authoritative. Turning off AC3 preservation can force audio re-encoding. AC3 does not retain Atmos.', logging:'Diagnostics & Logging', level:'Plugin logging level', matching:'Detailed rule matching', profiles:'Device profile changes', response:'Playback response analysis (read-only)', performance:'Performance measurements', debugPreset:'Use development Debug preset', loggingNote:'Logs: Jellyfin Dashboard → Logs, in the server\'s configured log directory. Changes apply to the next request without a restart. If the server filters Debug/Trace, these diagnostics use native Information entries labeled with their original level. Stricter global filters can still suppress messages; no global logging file is changed.', privacy:'No tokens, full stream URLs, media paths or raw device/user identifiers are logged. Stream offers do not prove client use or actual FFmpeg output.', save:'Save configuration', saved:'Configuration saved. Effective on the next PlaybackInfo request.', saveError:'Saving failed. Check permissions, selections and server availability. No success was assumed.', loadError:'Could not load configuration, devices or users. Saving is disabled; existing settings have not been replaced.', empty:'No rules. Add one to configure an explicitly scoped policy.', moveUp:'Move up', moveDown:'Move down', duplicate:'Duplicate', remove:'Delete', removeConfirm:'Delete this rule?', unknownDevice:'Unavailable saved device', unknownUser:'Unavailable saved user', shadow:'Fully hidden by earlier enabled rules', overlap:'Overlaps earlier enabled rules; list order decides', invalid:'Invalid rule: use a unique ID, name, AC3 limits and explicit device/user selections.', emptyRule:'Enabled rules need device and user selections or their explicit All options.', tooMany:'At most 64 rules are supported.', newRule:'AC3 rule', disabled:'disabled', active:'enabled', selectionHint:'Use Ctrl/Cmd or the browser selection controls for multiple entries.', reloadConfirm:'Reload and discard unsaved changes?' },
+        de: { intro:'Experimentelle AC3-Regeln. Die erste aktivierte passende Regel gewinnt. Keine Kombination von Regeln.', language:'Sprache dieser Seite', master:'Audioregeln aktivieren', rules:'Geordnete Regeln', add:'Regel hinzufügen', reload:'Neu laden', edit:'Regel bearbeiten', name:'Regelname', enabled:'Regel aktiviert', devices:'Geräte', users:'Benutzer', allDevices:'Alle Geräte (explizit)', allUsers:'Alle Benutzer (explizit)', deviceHelp:'Ein oder mehrere Geräte wählen. Leer bedeutet niemals alle.', userHelp:'Ein oder mehrere Benutzer wählen. Gerät UND Benutzer müssen passen.', codec:'Zielcodec', channels:'Maximale Audiokanäle', bitrate:'Maximale Audiobitrate (bit/s)', preserve:'Kompatibles AC3 erhalten (natives Direct Play/Kopieren erlauben)', stereo:'Mono-/Stereoquellen unverändert erhalten', ruleDiagnostics:'Detaillierte Diagnose für diese Regel aktivieren', policyNote:'Videogrenzen und Rechte bleiben maßgeblich. Ohne AC3-Erhalt kann Audio neu kodiert werden. AC3 erhält kein Atmos.', logging:'Diagnose & Protokollierung', level:'Plugin-Protokollstufe', matching:'Detaillierte Regelauswertung', profiles:'Änderungen am Geräteprofil', response:'Playback-Antwort auswerten (nur lesend)', performance:'Zeitmessungen', debugPreset:'Entwicklungsprofil Debug verwenden', loggingNote:'Protokolle: Jellyfin-Dashboard → Protokolle, im konfigurierten Logverzeichnis des Servers. Änderungen gelten ohne Neustart ab der nächsten Anfrage. Filtert der Server Debug/Trace heraus, erscheinen diese Diagnosen als native Information-Meldungen mit Kennzeichnung der ursprünglichen Stufe. Strengere globale Filter können Meldungen weiter unterdrücken; keine globale Logdatei wird geändert.', privacy:'Keine Tokens, vollständigen Stream-URLs, Medienpfade oder rohen Geräte-/Benutzerkennungen in Logs. Streamangebote belegen weder Clientnutzung noch tatsächliche FFmpeg-Ausgabe.', save:'Konfiguration speichern', saved:'Gespeichert. Wirksam ab der nächsten PlaybackInfo-Anfrage.', saveError:'Speichern fehlgeschlagen. Rechte, Auswahl und Serververbindung prüfen. Erfolg wurde nicht angenommen.', loadError:'Konfiguration, Geräte oder Benutzer konnten nicht geladen werden. Speichern ist gesperrt; bestehende Einstellungen wurden nicht ersetzt.', empty:'Keine Regeln. Eine Regel mit expliziter Zuordnung hinzufügen.', moveUp:'Nach oben', moveDown:'Nach unten', duplicate:'Duplizieren', remove:'Löschen', removeConfirm:'Diese Regel löschen?', unknownDevice:'Nicht mehr verfügbares gespeichertes Gerät', unknownUser:'Nicht mehr verfügbarer gespeicherter Benutzer', shadow:'Vollständig durch frühere aktivierte Regeln verdeckt', overlap:'Überschneidung mit früheren aktivierten Regeln; Listenreihenfolge entscheidet', invalid:'Ungültige Regel: eindeutige ID, Name, AC3-Grenzen und explizite Geräte-/Benutzerauswahl erforderlich.', emptyRule:'Aktivierte Regeln brauchen Geräte- und Benutzerauswahl oder die jeweilige explizite Alle-Option.', tooMany:'Höchstens 64 Regeln werden unterstützt.', newRule:'AC3-Regel', disabled:'deaktiviert', active:'aktiviert', selectionHint:'Mehrfachauswahl mit Strg/Cmd oder den Auswahlfunktionen des Browsers.', reloadConfirm:'Neu laden und ungespeicherte Änderungen verwerfen?' }
+    };
+    let config, rules = [], selected = -1, devices = [], users = [], loaded = false, dirty = false;
+    let language = 'en';
+    const t = key => words[language][key] || words.en[key] || key;
+    const userKey = value => String(value || '').replace(/-/g, '').toLowerCase();
+    const validGuid = value => /^[0-9a-f]{32}$/.test(userKey(value)) && !/^0+$/.test(userKey(value));
+    const status = text => { find('atcStatus').textContent = text; };
+    function localize() { page.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); }); }
+    function uuid() {
+        const bytes = new Uint8Array(16); window.crypto.getRandomValues(bytes); bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
+        const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+    }
+    function newRule() { return { Id:uuid(), Name:t('newRule')+' '+(rules.length+1), IsEnabled:false, DeviceIds:[], AllDevices:false, UserIds:[], AllUsers:false, TargetCodec:'ac3', MaxAudioChannels:6, MaxAudioBitrate:640000, PreserveCompatibleAudio:true, PreserveStereo:true, EnableDiagnostics:true }; }
+    function button(label, action, disabled) {
+        const el = document.createElement('button'); el.type = 'button'; el.setAttribute('is','emby-button'); el.className='raised emby-button'; el.textContent=label; el.disabled=!!disabled; el.addEventListener('click',action); return el;
+    }
+    function axisMatch(rule, value, deviceAxis) { return deviceAxis ? rule.AllDevices || rule.DeviceIds.includes(value) : rule.AllUsers || rule.UserIds.some(v => userKey(v) === value); }
+    function nonempty(rule) { return (rule.AllDevices || rule.DeviceIds.length) && (rule.AllUsers || rule.UserIds.length); }
+    function covers(earlier, rule) {
+        const ds = rule.AllDevices ? [...new Set(earlier.flatMap(r=>r.DeviceIds)),Symbol('other-device')] : rule.DeviceIds;
+        const us = rule.AllUsers ? [...new Set(earlier.flatMap(r=>r.UserIds.map(userKey))),Symbol('other-user')] : rule.UserIds.map(userKey);
+        // Bound warning work on very large administrator-created selections. An unproven shadow remains an overlap warning.
+        if (ds.length * us.length * earlier.length > 50000) return false;
+        return ds.length && us.length && ds.every(d=>us.every(u=>earlier.some(r=>axisMatch(r,d,true)&&axisMatch(r,u,false))));
+    }
+    function intersects(a,b) { return (a.AllDevices||b.AllDevices||a.DeviceIds.some(v=>b.DeviceIds.includes(v))) && (a.AllUsers||b.AllUsers||a.UserIds.some(v=>b.UserIds.some(w=>userKey(w)===userKey(v)))); }
+    function warnings() {
+        const root=find('atcWarnings'); root.replaceChildren();
+        rules.forEach((r,index)=>{
+            if (!r.IsEnabled || !nonempty(r)) return;
+            const earlier=rules.slice(0,index).filter(x=>x.IsEnabled&&nonempty(x));
+            if (!earlier.some(x=>intersects(x,r))) return;
+            const note=document.createElement('p'); note.className='atc-warning'; note.textContent=r.Name+': '+t(covers(earlier,r)?'shadow':'overlap'); root.append(note);
+        });
+    }
+    function renderRules() {
+        const root=find('atcRules'); root.replaceChildren();
+        if (!rules.length) { const p=document.createElement('p'); p.textContent=t('empty'); root.append(p); }
+        rules.forEach((r,index)=>{
+            const card=document.createElement('div'); card.className='atc-card'; card.setAttribute('aria-current',String(index===selected));
+            const title=document.createElement('div'); title.className='atc-card-title'; title.textContent=(index+1)+'. '+r.Name+' — '+t(r.IsEnabled?'active':'disabled'); card.append(title);
+            const tools=document.createElement('div'); tools.className='atc-toolbar';
+            tools.append(button(t('edit'),()=>{ selected=index; renderEditor(); renderRules(); }),
+                button(t(r.IsEnabled?'disabled':'active'),()=>{r.IsEnabled=!r.IsEnabled; dirty=true; renderEditor(); renderRules();}),
+                button(t('moveUp'),()=>move(index,-1),index===0),button(t('moveDown'),()=>move(index,1),index===rules.length-1),
+                button(t('duplicate'),()=>{if(rules.length>=64){status(t('tooMany'));return;} const copy=JSON.parse(JSON.stringify(r));copy.Id=uuid();copy.Name=(r.Name+' copy').slice(0,80);copy.IsEnabled=false;rules.splice(index+1,0,copy);selected=index+1;dirty=true;renderEditor();renderRules();}),
+                button(t('remove'),()=>{if(window.confirm(t('removeConfirm'))){rules.splice(index,1);selected=Math.min(selected,rules.length-1);dirty=true;renderEditor();renderRules();}}));
+            card.append(tools); root.append(card);
+        });
+        find('atcAdd').disabled=!loaded||rules.length>=64; warnings();
+    }
+    function move(index,delta) { const current=rules[selected];[rules[index],rules[index+delta]]=[rules[index+delta],rules[index]];selected=rules.indexOf(current);dirty=true;renderRules(); }
+    function picks(id, known, values, isUser) {
+        const select=find(id);select.replaceChildren(); const key=isUser?userKey:v=>v;const selectedKeys=new Set(values.map(key));const knownKeys=new Set(known.map(v=>key(v.id)));
+        known.forEach(v=>{const option=new Option(v.name,v.id);option.selected=selectedKeys.has(key(v.id));select.add(option);});
+        values.filter(v=>!knownKeys.has(key(v))).forEach(v=>{const option=new Option(t(isUser?'unknownUser':'unknownDevice')+' (…'+String(v).slice(-6)+')',v);option.selected=true;select.add(option);});
+    }
+    function renderEditor() {
+        const rule=rules[selected];find('atcEditor').hidden=!rule;if(!rule)return;
+        find('atcName').value=rule.Name;find('atcEnabled').checked=rule.IsEnabled;
+        find('atcAllDevices').checked=rule.AllDevices;find('atcAllUsers').checked=rule.AllUsers;
+        picks('atcDevices',devices,rule.DeviceIds,false);picks('atcUsers',users,rule.UserIds,true);
+        find('atcDevices').disabled=rule.AllDevices;find('atcUsers').disabled=rule.AllUsers;
+        find('atcCodec').value=rule.TargetCodec;find('atcChannels').value=String(rule.MaxAudioChannels);find('atcBitrate').value=String(rule.MaxAudioBitrate);
+        find('atcPreserve').checked=rule.PreserveCompatibleAudio;find('atcStereo').checked=rule.PreserveStereo;find('atcRuleDiagnostics').checked=rule.EnableDiagnostics;
+    }
+    function collectEditor() {
+        const r=rules[selected];if(!r)return;
+        Object.assign(r,{Name:find('atcName').value,IsEnabled:find('atcEnabled').checked,AllDevices:find('atcAllDevices').checked,AllUsers:find('atcAllUsers').checked,
+            DeviceIds:Array.from(find('atcDevices').selectedOptions,o=>o.value),UserIds:Array.from(find('atcUsers').selectedOptions,o=>o.value),TargetCodec:find('atcCodec').value,
+            MaxAudioChannels:Number(find('atcChannels').value),MaxAudioBitrate:Number(find('atcBitrate').value),PreserveCompatibleAudio:find('atcPreserve').checked,PreserveStereo:find('atcStereo').checked,EnableDiagnostics:find('atcRuleDiagnostics').checked});
+        find('atcDevices').disabled=r.AllDevices;find('atcUsers').disabled=r.AllUsers;dirty=true;renderRules();
+    }
+    function validate() {
+        if(rules.length>64) return t('tooMany');const ids=new Set();
+        for(const r of rules){
+            if(!validGuid(r.Id)||ids.has(userKey(r.Id))||!r.Name.trim()||r.Name.length>80||r.TargetCodec!=='ac3'||![1,2,6].includes(r.MaxAudioChannels)||!bitrates.includes(r.MaxAudioBitrate)
+                ||r.DeviceIds.length>256||r.UserIds.length>256||r.DeviceIds.some(v=>!v.trim()||v.length>512||/[\x00-\x1f]/.test(v))||r.UserIds.some(v=>!validGuid(v))) return t('invalid');
+            ids.add(userKey(r.Id));if(r.IsEnabled&&!nonempty(r))return t('emptyRule');
+        }
+        return null;
+    }
+    async function load() {
+        loaded=false;find('atcSave').disabled=true;find('atcAdd').disabled=true;Dashboard.showLoadingMsg();
+        try{
+            const result=await Promise.all([ApiClient.getPluginConfiguration(pluginId),ApiClient.getDevices(),ApiClient.getUsers()]);
+            config=result[0];if(config.SchemaVersion!==2||!Array.isArray(config.Rules))throw new Error('schema');
+            // Device responses may include tokens. Retain only display fields and opaque selection values.
+            const deviceMap=new Map();(result[1].Items||[]).forEach(d=>{if(d.Id)deviceMap.set(d.Id,{id:d.Id,name:(d.CustomName||d.Name||t('devices'))+' — '+(d.AppName||'')+' '+(d.AppVersion||'')});});
+            devices=Array.from(deviceMap.values());users=(result[2].Items||result[2]||[]).map(u=>({id:u.Id,name:u.Name||t('users')}));
+            rules=JSON.parse(JSON.stringify(config.Rules));language=config.UiLanguage==='de'?'de':'en';find('atcLanguage').value=language;localize();
+            find('atcMaster').checked=!!config.IsEnabled;const log=config.Diagnostics||{};find('atcLogLevel').value=log.Level||'Information';
+            find('atcLogMatching').checked=!!log.DetailedRuleMatching;find('atcLogProfiles').checked=!!log.DeviceProfileChanges;find('atcLogResponse').checked=!!log.PlaybackResponseAnalysis;find('atcLogPerformance').checked=!!log.PerformanceMeasurements;
+            selected=rules.length?0:-1;loaded=true;dirty=false;find('atcSave').disabled=false;renderEditor();renderRules();status('');
+        }catch(_){status(t('loadError'));}finally{Dashboard.hideLoadingMsg();}
+    }
+    bitrates.forEach(rate=>find('atcBitrate').add(new Option(String(rate),String(rate))));
+    find('atcEditor').addEventListener('input',collectEditor);find('atcEditor').addEventListener('change',collectEditor);
+    ['atcMaster','atcLogLevel','atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'].forEach(id=>find(id).addEventListener('change',()=>{dirty=true;}));
+    find('atcLanguage').addEventListener('change',()=>{language=find('atcLanguage').value;localize();dirty=true;renderEditor();renderRules();});
+    find('atcAdd').addEventListener('click',()=>{if(!loaded||rules.length>=64)return;rules.push(newRule());selected=rules.length-1;dirty=true;renderEditor();renderRules();find('atcName').focus();});
+    find('atcReload').addEventListener('click',()=>{if(!dirty||window.confirm(t('reloadConfirm')))load();});
+    find('atcDebugPreset').addEventListener('click',()=>{find('atcLogLevel').value='Debug';['atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'].forEach(id=>{find(id).checked=true;});dirty=true;});
+    find('ATCForm').addEventListener('submit',async event=>{
+        event.preventDefault();if(!loaded)return;collectEditor();const error=validate();if(error){status(error);return;}
+        Dashboard.showLoadingMsg();find('atcSave').disabled=true;
+        try{
+            const current=await ApiClient.getPluginConfiguration(pluginId);if(current.SchemaVersion!==2)throw new Error('schema');
+            current.IsEnabled=find('atcMaster').checked;current.Rules=rules;current.SchemaVersion=2;current.UiLanguage=language;
+            current.Diagnostics={Level:find('atcLogLevel').value,DetailedRuleMatching:find('atcLogMatching').checked,DeviceProfileChanges:find('atcLogProfiles').checked,PlaybackResponseAnalysis:find('atcLogResponse').checked,PerformanceMeasurements:find('atcLogPerformance').checked};
+            const result=await ApiClient.updatePluginConfiguration(pluginId,current);Dashboard.processPluginConfigurationUpdateResult(result);dirty=false;status(t('saved'));
+        }catch(_){status(t('saveError'));}finally{Dashboard.hideLoadingMsg();find('atcSave').disabled=false;}
+    });
+    page.addEventListener('pageshow',load);
+}());
+</script>
+</div>
+</body></html>

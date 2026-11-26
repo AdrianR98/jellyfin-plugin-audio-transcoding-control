@@ -1,13 +1,24 @@
 # Changelog
 
-## 0.0.1 — M0, unveröffentlicht
+## 0.2.0 — M2, experimental pre-release
 
-- Lokale Repository-Struktur und Plugin-Rahmen auf Basis des offiziellen Templates.
-- .NET 9 und Jellyfin-10.11.11-Paketreferenzen mit NuGet-Lockfiles.
-- Inaktiver Plugin-Einstiegspunkt, Konfiguration und durchleitender globaler MVC-Filter.
-- Versionsgebundene Analyse von Server 10.11.11 und Android TV 0.20.0.
-- Architekturentscheidung für vorbereitende DeviceProfile-Anpassung in M1.
-- Isolierte Tests für MVC-Anbindung und vier StreamBuilder-Discovery-Fälle.
-- Lokale Build-/Testskripte, keine Release-Automation oder Serverinstallation.
+- Ordered independent AC3 rules with device/user multiselection, explicit All options, first-match priority and safe identity validation.
+- Schema 2 and one-time migration preserving legacy switches and exact selections; new installations remain disabled.
+- Native English/German dashboard: rule editing, duplication, reordering, missing selections, overlap warnings and save validation.
+- Configurable AC3 channel/bitrate limits and original AC3/mono/stereo preservation, retaining native permission and video constraints.
+- Hot-reloaded structured native diagnostics, request correlation, stable event IDs, category controls, safe profile snapshots and read-only native offer analysis.
+- Debug/Trace diagnostics remain visible through labeled Information entries when the global logger accepts only Information.
+- Reproducible versioned package and public catalog entry, retaining 0.1.0.0 as a fallback.
+- Release build and existing tests plus five focused checks passed. Native update/dashboard and hardware playback validation remain user-owned; no production changes were performed.
 
-Dieser Eintrag dokumentiert den Entwicklungsstand und bezeichnet kein veröffentlichtes Paket.
+## 0.1.0 — M1 / M1.1, experimental pre-release
+
+- Native PlaybackInfo integration and opt-in exact device/user AC3 policy.
+- Deep profile copying, native user/video constraints and safe bypass paths.
+- Isolated native server/FFmpeg evidence: HEVC video copy with AC3 six-channel / 640000 bit/s output; direct AAC streaming bypass also demonstrated.
+- Private controlled installation/rollback preparation and practical test matrix.
+- Published package and catalog entry retained unchanged by M2. Real Fire TV/receiver/HDR/Dolby Vision behavior was not established.
+
+## M0 — project foundation
+
+- GPL plugin template, pinned Jellyfin 10.11.11 / .NET 9 references, source analysis and isolated MVC/StreamBuilder discovery tests.

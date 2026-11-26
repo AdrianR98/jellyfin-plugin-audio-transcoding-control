@@ -1,5 +1,13 @@
 # Roadmap
 
+## Aktueller M1-Stand
+
+Der M1-Auftrag ist freigegeben und als eng begrenzter Prototyp implementiert; [native Server-/FFmpeg-Evidenz und Grenzen](m1-verification.md). Die zulässige Vereinfachung auf eine einzelne exakte Geräte-/Benutzerregel wurde genutzt. Globale Regeln, mehrere Prioritäten und Namensmatching sind nicht Bestandteil dieses Prototyps.
+
+Der geforderte Einfluss auf den tatsächlichen Audioencoder ist nachgewiesen: erste PlaybackInfo-Anfrage → servergenerierte AC3-HLS-URL → echtes Segment mit Video-Copy/AC3 5.1/640000. Echte Android-TV-/Fire-TV-/ARC-/HDR-Prüfung bleibt offen. Direkte selbst erzeugte AAC-Streamingrequests umgehen den Ansatz A weiterhin. Ein eventueller zusätzlicher Streamingfilter benötigt einen eigenen Auftrag und konkrete Clientbelege.
+
+Der folgende Ablauf ist die historische M0-Planung; er ist kein zusätzlicher Auftrag, jetzt M2/M3 umzusetzen. Nach dem lokalen Feature-Branch-Commit stoppen; kein Push, keine produktive Installation.
+
 ## M0 — Foundation und Discovery
 
 Umfang: lokales Repository, Plugin-Template-Basis, net9.0 und exakt versionierte Jellyfin-Pakete, kompilierbarer inaktiver Plugin-/MVC-Rahmen, Quellcodeanalyse, Lizenzbefunde, gezielte Tests, lokaler Abschlusscommit. Keine produktive Installation, Veröffentlichung oder neue Systemkomponenten.

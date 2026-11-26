@@ -1,5 +1,7 @@
 # Technische Machbarkeit
 
+**Aktualisierung M1:** Ansatz A ist implementiert. Der native Server-/HLS-/FFmpeg-Nachweis liegt vor; siehe [Implementierung, Beweisstärken und Einschränkungen](m1-verification.md). Die folgenden Abschnitte halten die ursprüngliche M0-Analyse fest. Aussagen über „noch nicht implementiert“ beschreiben dort den damaligen M0-Stand, nicht den aktuellen Branch.
+
 ## Ergebnis und Evidenzstand
 
 **M0-Ergebnis:** Ein Server-Plugin kann über `IPluginServiceRegistrator` globale MVC-Action-Filter registrieren. Ein solcher Filter kann nach Model-Binding und vor `MediaInfoController.GetPostedPlaybackInfo` das Profil im gebundenen Request ersetzen. Ansatz A ist der bevorzugte M1-Eingriffspunkt. Die Quellen und isolierten Tests stützen die Machbarkeit; eine in Jellyfin geladene, Audio verändernde Implementierung existiert noch nicht.

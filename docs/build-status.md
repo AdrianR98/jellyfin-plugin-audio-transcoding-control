@@ -1,5 +1,7 @@
 # Build- und Prüfstatus M0
 
+**Historischer M0-Bericht.** Der aktuelle M1-Branch hat einen erfolgreichen Clean-/Release-Build und 36 bestandene Tests sowie einen echten nativen Server-/FFmpeg-Nachweis. Aktuelle Befehle, SHA256 und Grenzen: [m1-verification.md](m1-verification.md). Die nachfolgenden Zahlen und Nicht-Ausführungen beziehen sich ausschließlich auf M0.
+
 Prüfdatum: **26.11.2026**, lokale Windows-Umgebung. Dieser Bericht beschreibt ausgeführte Prüfungen, keine geplanten oder angenommenen Testerfolge.
 
 ## Umgebung und Paketnachweis
