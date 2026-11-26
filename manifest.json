@@ -3,9 +3,18 @@
     "category": "General",
     "guid": "c48a5098-04e0-4de5-a46c-8adae788f91b",
     "name": "Jellyfin Audio Transcoding Control",
-    "description": "Unveröffentlichte M0-Vorlage für gerätespezifische Audio-Transcoding-Regeln.",
-    "overview": "Initialversion 0.0.1. Keine veröffentlichten Pakete; noch keine Wiedergaberegeln.",
+    "description": "Experimental device-specific AC3 audio transcoding rules. Disabled by default; manual configuration required.",
+    "overview": "Control audio transcoding for a selected device and user.",
     "owner": "AdrianR98",
-    "versions": []
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Initial experimental AC3 prototype. Manual configuration required; real-device playback not yet validated.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/download/v0.1.0/Jellyfin.Plugin.AudioTranscodingControl-0.1.0.zip",
+        "checksum": "8990486892cecb3fb94722d0f0daa497",
+        "timestamp": "2026-11-26T00:00:00Z"
+      }
+    ]
   }
 ]
