@@ -2,14 +2,18 @@
 using System.Globalization;
 using System.Text.Json;
 using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.AudioTranscodingControl.Configuration;
 using MediaBrowser.Model.Dlna;
 
 namespace Jellyfin.Plugin.AudioTranscodingControl.Policy;
 
 internal static class Ac3ProfileTransformer
 {
-    internal static DeviceProfile? Transform(DeviceProfile original)
+    internal static DeviceProfile? Transform(DeviceProfile original) => Transform(original, new TranscodingRule());
+
+    internal static DeviceProfile? Transform(DeviceProfile original, TranscodingRule rule, bool forceReencode = false)
     {
+        if (ConfigurationMigration.RuleError(rule) is not null) return null;
         // Reject derived or malformed profiles rather than losing unknown state during cloning.
         if (original.GetType() != typeof(DeviceProfile) || original.TranscodingProfiles is null
             || original.DirectPlayProfiles is null || original.CodecProfiles is null
@@ -28,7 +32,7 @@ internal static class Ac3ProfileTransformer
         if (original.CodecProfiles.Any(p => p.Type == CodecType.VideoAudio && (string.IsNullOrEmpty(p.Codec) || ContainsAc3(p.Codec))
             && p.Conditions.Any(c => c.Property == ProfileConditionValue.AudioChannels
                 && c.Condition is ProfileConditionType.Equals or ProfileConditionType.LessThanEqual
-                && int.TryParse(c.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cap) && cap < 6)))
+                && int.TryParse(c.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var cap) && cap < rule.MaxAudioChannels)))
         {
             return null;
         }
@@ -37,7 +41,7 @@ internal static class Ac3ProfileTransformer
         if (paths.Length == 0 || paths.Any(p => p.Protocol != MediaStreamProtocol.hls
             || (p.Container != "ts" && p.Container != "mp4") || !ContainsAc3(p.AudioCodec)
             || (!string.IsNullOrEmpty(p.MaxAudioChannels)
-                && (!int.TryParse(p.MaxAudioChannels, NumberStyles.None, CultureInfo.InvariantCulture, out var cap) || cap < 6))))
+                && (!int.TryParse(p.MaxAudioChannels, NumberStyles.None, CultureInfo.InvariantCulture, out var cap) || cap < rule.MaxAudioChannels))))
         {
             return null;
         }
@@ -46,12 +50,12 @@ internal static class Ac3ProfileTransformer
         foreach (var path in copy.TranscodingProfiles.Where(p => p.Type == DlnaProfileType.Video && p.Context == EncodingContext.Streaming))
         {
             path.AudioCodec = "ac3";
-            path.MaxAudioChannels = "6";
+            path.MaxAudioChannels = rule.MaxAudioChannels.ToString(CultureInfo.InvariantCulture);
         }
 
         // Empty AudioCodec means wildcard in Jellyfin. Remove exhausted profiles rather than creating one.
         copy.DirectPlayProfiles = copy.DirectPlayProfiles.Where(p => p.Type != DlnaProfileType.Video
-            || string.IsNullOrEmpty(p.AudioCodec) || ContainsAc3(p.AudioCodec)).ToArray();
+            || (!forceReencode && (string.IsNullOrEmpty(p.AudioCodec) || ContainsAc3(p.AudioCodec)))).ToArray();
         foreach (var path in copy.DirectPlayProfiles.Where(p => p.Type == DlnaProfileType.Video))
         {
             path.AudioCodec = "ac3";
@@ -59,7 +63,7 @@ internal static class Ac3ProfileTransformer
 
         // Codec profiles apply even for pure audio failures; TranscodingProfile.Conditions alone do not.
         // First profile is applied last by StreamBuilder; LessThanEqual preserves preceding smaller limits.
-        var existingGuard = copy.CodecProfiles.FirstOrDefault(IsGuard);
+        var existingGuard = copy.CodecProfiles.FirstOrDefault(p => IsGuard(p, rule));
         if (existingGuard is not null)
         {
             copy.CodecProfiles = [existingGuard, .. copy.CodecProfiles.Where(p => !ReferenceEquals(p, existingGuard))];
@@ -72,8 +76,8 @@ internal static class Ac3ProfileTransformer
                 Codec = "ac3",
                 Conditions =
                 [
-                    new ProfileCondition(ProfileConditionType.LessThanEqual, ProfileConditionValue.AudioChannels, "6", true),
-                    new ProfileCondition(ProfileConditionType.LessThanEqual, ProfileConditionValue.AudioBitrate, "640000", true),
+                    new ProfileCondition(ProfileConditionType.LessThanEqual, ProfileConditionValue.AudioChannels, rule.MaxAudioChannels.ToString(CultureInfo.InvariantCulture), true),
+                    new ProfileCondition(ProfileConditionType.LessThanEqual, ProfileConditionValue.AudioBitrate, rule.MaxAudioBitrate.ToString(CultureInfo.InvariantCulture), true),
                 ],
             }, .. copy.CodecProfiles];
         }
@@ -84,11 +88,11 @@ internal static class Ac3ProfileTransformer
     private static bool PlainConditions(ProfileCondition[]? conditions) => conditions is not null
         && conditions.All(p => p is not null && p.GetType() == typeof(ProfileCondition));
 
-    private static bool IsGuard(CodecProfile profile) => profile.Type == CodecType.VideoAudio && profile.Codec == "ac3"
+    private static bool IsGuard(CodecProfile profile, TranscodingRule rule) => profile.Type == CodecType.VideoAudio && profile.Codec == "ac3"
         && string.IsNullOrEmpty(profile.Container) && string.IsNullOrEmpty(profile.SubContainer) && profile.ApplyConditions.Length == 0
         && profile.Conditions.Length == 2 && profile.Conditions.All(p => p.Condition == ProfileConditionType.LessThanEqual && p.IsRequired)
-        && profile.Conditions.Any(p => p.Property == ProfileConditionValue.AudioChannels && p.Value == "6")
-        && profile.Conditions.Any(p => p.Property == ProfileConditionValue.AudioBitrate && p.Value == "640000");
+        && profile.Conditions.Any(p => p.Property == ProfileConditionValue.AudioChannels && p.Value == rule.MaxAudioChannels.ToString(CultureInfo.InvariantCulture))
+        && profile.Conditions.Any(p => p.Property == ProfileConditionValue.AudioBitrate && p.Value == rule.MaxAudioBitrate.ToString(CultureInfo.InvariantCulture));
 
     private static bool ContainsAc3(string? value) => value?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
         .Contains("ac3", StringComparer.OrdinalIgnoreCase) == true;

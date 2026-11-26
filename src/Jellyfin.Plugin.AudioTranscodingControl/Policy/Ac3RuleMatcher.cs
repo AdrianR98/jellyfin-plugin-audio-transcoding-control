@@ -11,24 +11,7 @@ internal static class Ac3RuleMatcher
     {
         deviceId = string.Empty;
         userId = Guid.Empty;
-        var rule = config.Ac3Rule;
-        if (!config.IsEnabled || rule is not { IsEnabled: true } || string.IsNullOrWhiteSpace(rule.DeviceId)
-            || rule.UserId == Guid.Empty || principal.Identity?.IsAuthenticated != true)
-        {
-            return false;
-        }
-
-        var devices = principal.FindAll(InternalClaimTypes.DeviceId).ToArray();
-        var users = principal.FindAll(InternalClaimTypes.UserId).ToArray();
-        if (devices.Length != 1 || users.Length != 1 || string.IsNullOrWhiteSpace(devices[0].Value)
-            || !Guid.TryParse(users[0].Value, out var authenticatedUser) || authenticatedUser == Guid.Empty
-            || !string.Equals(rule.DeviceId, devices[0].Value, StringComparison.Ordinal) || rule.UserId != authenticatedUser)
-        {
-            return false;
-        }
-
-        deviceId = devices[0].Value;
-        userId = authenticatedUser;
-        return true;
+        return RuleEvaluator.Select(principal, ConfigurationMigration.Normalize(config)) is not null
+            && RuleEvaluator.Identity(principal, out deviceId, out userId);
     }
 }

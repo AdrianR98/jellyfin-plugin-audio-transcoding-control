@@ -1,31 +1,19 @@
-# Projektkontext
+# Project context
 
-- Name/Namespace: Jellyfin Audio Transcoding Control / `Jellyfin.Plugin.AudioTranscodingControl`.
-- Stand: M1.1-Praxistestvorbereitung, 0.1.0, unveröffentlicht. Opt-in-Regel; exakte Device-ID plus Benutzer-ID, beide Schalter erforderlich. Aktueller Nachweis: `docs/m1-verification.md`; M0-Basis `202fd1e` bleibt auf main.
-- Ziel: Jellyfin 10.11.11 (`net9.0`), Android TV 0.20.0, Windows. Gepinnte Quellen und Navigationslinks: `docs/sources.md`, `docs/source-lock.json`.
-- Einstieg für Folgeschritte: zuerst die zum Auftrag passende Dokumentation lesen; kein erneutes Vollscan aller Upstreams ohne Versionswechsel oder konkreten Widerspruch.
-- Ansatz A implementiert: tatsächliches `Jellyfin.Api.Models.MediaInfoDtos.PlaybackInfoDto`, globaler `IAsyncActionFilter` vor nativer Action; Registrierung über `IPluginServiceRegistrator`/`PostConfigure<MvcOptions>`. API-Assembly aus SHA256-geprüftem portablem Server in `.local/`; keine Kopie im Plugin-Ausgabeverzeichnis. Host-Controller-Version und API-Source-Commit müssen passen; API-Assembly trägt im offiziellen Archiv überraschend Version 12.0.0.0, daher nicht mit Serverversion gleichsetzen.
-- Enger Scope: lokale explizite Quelle, ausgewählte bekannte 6/8-Kanalspur, AC3/AAC/EAC3/TrueHD/DTS/DCA, vorhandene AC3-HLS-Angebote. Stereo/Mono, Remote/Live, fehlende/mehrdeutige Daten, kleinere Kanallimits und verweigerte Rechte unangetastet lassen. Native Metadatenabfrage darf wie der Controller probieren, damit der erste PlaybackInfo-Aufruf funktioniert.
-- Direkte Streamingaufrufe ohne PlaybackInfo bleiben unverändert (native AAC-Ausgabe praktisch belegt). Keine Aussage, dass die echte Fire-TV-App geprüft wurde. Keine Garantie für DV/HDR/Atmos.
-- Nicht passende Geräte, deaktiviertes Plugin, unbekannte DTO-Formen und interne Vorbereitungsfehler müssen unverändert durchlaufen. Vor Mutation vollständig vorbereiten und validieren. `next()` exakt einmal; Controllerfehler nicht verschlucken oder durch erneuten Aufruf wiederholen.
-- Profile tief kopieren; keine global gespeicherten Capabilities mutieren. Keine Rechte, Video-/HDR- oder Untertitelgrenzen lockern. Stereo nicht hochmischen. Codec-Reihenfolge allein genügt nicht, siehe Analyse.
-- Keine Core-/Client-/FFmpeg-Manipulation, kein Harmony. Keine produktive Installation oder Veröffentlichung ohne passenden Auftrag. M1.1 erlaubt Push des Feature-Branches und Draft-PR, keinen Merge/Release; main unverändert lassen. Keine Release-Workflows.
-- Logging nur strukturierte erlaubte Diagnosefelder; niemals Header, Claims-Dumps, URLs, Tokens, Pfade oder komplette DTOs protokollieren.
-- GPL-3.0-only. Template-Herkunft in `THIRD-PARTY-NOTICES.md` erhalten. DirectPlayForce ohne vollständige Lizenzgrundlage nur als gelesene Referenz; keinen Code kopieren.
-
-## Lokale Befehle
+- Jellyfin Audio Transcoding Control, namespace `Jellyfin.Plugin.AudioTranscodingControl`, GPL-3.0-only. Keep template attribution and THIRD-PARTY-NOTICES.md.
+- Current milestone M2 / version 0.2.0.0. Read README.md and docs/m2.md for current behavior. Historical M1 evidence: docs/m1-verification.md. Pinned sources: docs/source-lock.json.
+- Jellyfin 10.11.11 / net9.0, SDK 9.0.201. Real Jellyfin.Api reference from verified ignored .local/server; no host/test DLLs in release output. Native API assembly version differs from server version; exact source/host checks are intentional.
+- Ordered AND/OR explicit-scope rules; first enabled match wins, no later fallback or implicit All. New installs disabled. Preserve migration selections and activation. Unknown identities/schema/profiles must safely bypass.
+- Keep native PlaybackInfo POST action filter and request-local deep copying. Do not loosen user/video/subtitle restrictions. Native next() exactly once; never swallow controller errors. No Core/client/FFmpeg patching.
+- Diagnostics use native ILogger and safe structured fields only. Never log tokens, URLs, raw device/user IDs, media paths, full DTOs or exception messages. Do not change global logging files. Read docs/m2.md for the labeled Information fallback for Debug/Trace.
+- User authorized the public v0.2.0 pre-release/catalog update and reconciliation of PR #1; preserve published 0.1 tag/asset/catalog entry. No Actions/CI or new browser framework. Retain existing tests and add only focused risk checks. User performs real native update/dashboard/hardware tests.
+- Do not install, configure or restart the production Jellyfin server. Private configuration/logs and generated artifacts stay ignored under .local/ or work/.
 
 ```powershell
 ./scripts/prepare-test-server.ps1
 ./scripts/build.ps1 -VerifyDeterminism
 ./scripts/test.ps1
-python scripts/verify-streaming.py # optional, nativer Server nur auf Loopback, synthetische Medien, finally beendet eigenen Prozess
-# Einzelbefehle:
-dotnet restore Jellyfin.Plugin.AudioTranscodingControl.sln --locked-mode
-dotnet build Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-restore
-dotnet test Jellyfin.Plugin.AudioTranscodingControl.sln -c Release --no-build --no-restore
+./scripts/package.ps1 -OutputDirectory ./work/package
 ```
 
-SDK 9.0.201 laut `global.json`; Lockfiles versionieren. Abhängigkeiten nur gezielt aktualisieren. Tests auf riskante Logik/Host-Verträge konzentrieren. Echte-Controller-Tests verwenden Stub-Metadaten; nur das separate Streaming-Skript belegt Plugin-Laden bis FFmpeg. Vorhandene Prüfungen nach relevanten Änderungen laufen lassen. `bin/`, `obj/`, `TestResults/`, `.local/`, `work/` und native Logs nicht committen. Nur bereinigte Evidenz-JSONs in `docs/evidence/` versionieren.
-
-Praxistest: docs/practice-test.md. scripts/manage-practice.ps1: Status/WhatIf lesend; tatsächliche Dateiarbeiten nur nach Freigabe und bei gestopptem Zielserver. Private Geräte-/Benutzerkonfiguration und Installationsplan ausschließlich unter .local/practice; niemals nach GitHub/Fixtures übernehmen. Neuer logging.json-Override betrifft nur die eigene Kategorie, bestehende Dateien niemals überschreiben. Paket 0.1.0 enthält nur eigene DLL plus Lizenz/Notice/Manifest. Keine Core-DLLs.
+The build's portable reference is not a separately installed production environment. Do not repeat full upstream analysis or native FFmpeg tests without a concrete need. Legacy manual practice scripts/docs describe 0.1; prefer the current native dashboard/catalog for 0.2.

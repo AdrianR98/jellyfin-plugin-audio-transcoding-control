@@ -4,6 +4,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Configuration/configPage.html" />
     <Reference Include="Jellyfin.Api" HintPath="$(JellyfinServerDir)/Jellyfin.Api.dll" Private="false" />
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Jellyfin.Plugin.AudioTranscodingControl.Tests</_Parameter1>

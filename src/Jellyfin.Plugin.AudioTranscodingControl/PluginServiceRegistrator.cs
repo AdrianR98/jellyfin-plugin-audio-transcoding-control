@@ -16,15 +16,8 @@ public sealed class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.Configure<PluginConfiguration>(options =>
         {
-            var saved = Plugin.Instance?.Configuration;
-            options.IsEnabled = saved?.IsEnabled ?? false;
-            options.EnableDebugLogging = saved?.EnableDebugLogging ?? false;
-            options.Ac3Rule = new Ac3DeviceRule
-            {
-                IsEnabled = saved?.Ac3Rule?.IsEnabled ?? false,
-                DeviceId = saved?.Ac3Rule?.DeviceId ?? string.Empty,
-                UserId = saved?.Ac3Rule?.UserId ?? Guid.Empty,
-            };
+            var saved = Plugin.Instance?.GetConfigurationSnapshot();
+            if (saved is not null) ConfigurationMigration.CopyInto(saved, options);
         });
         serviceCollection.AddScoped<PlaybackInfoActionFilter>();
         serviceCollection.PostConfigure<MvcOptions>(options =>
