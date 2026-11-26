@@ -3,6 +3,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Jellyfin.Api" HintPath="$(JellyfinServerDir)/Jellyfin.Api.dll" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/Jellyfin.Plugin.AudioTranscodingControl/Jellyfin.Plugin.AudioTranscodingControl.csproj" />
     <!-- The isolated test process needs host DLLs at runtime; the plugin itself excludes them. -->

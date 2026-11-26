@@ -1,5 +1,19 @@
 # Testplan
 
+## M1: aktueller Prüfstand
+
+**36 Tests bestanden**, einschließlich aller zehn vorhandenen M0-Fälle. Neue Tests verwenden das reale Jellyfin.Api-DTO, den echten Controller, MediaInfoHelper und StreamBuilder in MVC; Benutzer-/Medien-/Encoderinformationen sind dabei isolierte Stubs. Weitere Tests decken Match-Determinismus, doppelte/fehlende Identität, Originalprofil-/Rechteintegrität, Objektkopien, Idempotenz, Query-Vorrang, kleinere Bitratenlimits, Video-Copy-Verbote und sanitisiertes Fehlerlogging ab.
+
+Ein gesonderter nativer Test lädt das Plugin über Jellyfins eigenen PluginManager, konfiguriert eine Wegwerf-Instanz auf Loopback und folgt ihrer TranscodingUrl bis zum realen FFmpeg-Output. Er prüft auch den ersten PlaybackInfo-Aufruf nach frischem Scan, AC3-/Stereo-DirectPlay, Wiederholung, Nichttreffer, `EnableTranscoding=false` und eine ausdrücklich direkte AAC-HLS-Kontrollanfrage. Das ist ein Server-/FFmpeg-Test; kein Test des tatsächlichen Fire-TV-Players, Dolby Vision oder Atmos. Vollständige Matrix: [m1-verification.md](m1-verification.md).
+
+```powershell
+./scripts/prepare-test-server.ps1 # einmalig, SHA256-geprüftes portables Testpaket
+./scripts/test.ps1              # schreibt TestResults/tests.trx
+python scripts/verify-streaming.py # expliziter nativer Test mit neu erzeugten Medien
+```
+
+Die folgenden M0-Ergebnisse und damaligen M1-Testziele bleiben als historische Ausgangsbasis erhalten.
+
 ## M0: ausgeführte Prüfungen
 
 Ziel ist die riskante technische Anbindung, keine Getter-/Setter-Abdeckung. Die vorhandenen Tests laufen ohne Serverinstallation, Netzwerk-Listener oder FFmpeg. NuGet wird nur beim Restore benötigt.

@@ -1,5 +1,9 @@
 # Herkunft und Lizenzprüfung
 
+## Ergänzung M1
+
+Die echte `Jellyfin.Api.dll` wird als externe Host-Assembly aus dem offiziellen portablen Windows-Paket 10.11.11 referenziert. Es wurde kein DTO-/API-Quellcode kopiert. Das Archiv samt eigenem FFmpeg bleibt ausschließlich unter `.local/`; keine Server-/FFmpeg-Binärdatei wird im Repository versioniert oder mit der Plugin-DLL ausgeliefert. Quellcommit, Download, Hashes und Identitätsbefund stehen in [m1-verification.md](docs/m1-verification.md). Die bisherigen Hinweise zu unterschiedlichen Root-/Paketlizenzangaben gelten weiterhin. Vor einer späteren Distribution ist deren tatsächlicher Inhalt erneut zu prüfen; M1 veröffentlicht kein Paket.
+
 Prüfstand: 26.11.2026. Die Prüfung erfolgte vor einer Codeübernahme. Projektlizenz: **GPL-3.0-only**. Der vollständige Lizenztext in `LICENSE` stammt unverändert aus dem offiziellen Template. Diese Bestandsaufnahme ersetzt keine umfassende Prüfung einer späteren Distribution.
 
 ## Offizielles Jellyfin-Plugin-Template

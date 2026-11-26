@@ -9,3 +9,5 @@ artifacts/
 *.nupkg
 *.snupkg
 *.zip
+.local/
+work/

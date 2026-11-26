@@ -1,5 +1,7 @@
 # Playback-Pipeline: Server 10.11.11 / Android TV 0.20.0
 
+**M1-Laufzeitnachweis:** Der globale Plugin-Filter verändert das echte gebundene PlaybackInfoDto vor `GetPostedPlaybackInfo`. Ein unveränderter nativer Server hat daraus eine AC3-URL erzeugt; der Abruf dieser URL bis zum Segment führte zu Video-Copy und echtem AC3 5.1/640000. Direkter HLS-Aufruf mit explizitem AAC blieb dagegen AAC. Diese beiden praktischen Nachweise, First-Request-Probing und die verbleibende Grenze zur echten App sind in [m1-verification.md](m1-verification.md) getrennt dokumentiert. Die folgende versionsgebundene M0-Codeanalyse bleibt gültige Grundlage.
+
 Alle Aussagen unter „Belegt“ beziehen sich auf die in [sources.md](sources.md) fixierten Commits. Lokale Experimente und noch offene Hardwarefragen werden getrennt bezeichnet.
 
 ## 1. Profilbildung und Request im Client — belegt

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.1 — M1-Prototyp, weiterhin unveröffentlicht
+
+- Echte PlaybackInfoDto-/Controller-Anbindung mit exakter Device-/Benutzerregel und standardmäßig deaktivierter Verarbeitung.
+- Anfrageisolierte AC3-HLS-Profiltransformation mit Kanal-/Bitratengrenzen, Erhaltung von Video- und Benutzerbeschränkungen und sicherem Fallback.
+- Sparsame strukturierte Diagnose mit pro Prozess anonymisierter Gerätezuordnung; keine Token-/URL-/Profil-Dumps.
+- Tests gegen echten Jellyfin-Controller und MediaInfoHelper sowie isolierter nativer Server-/FFmpeg-Test mit synthetischen 4K-Medien.
+- Serverseitig nachgewiesen: Video-Copy plus AC3 5.1/640000; AC3-/Stereo-DirectPlay bleibt erhalten. Direkte AAC-Streamingaufrufe umgehen weiterhin den PlaybackInfo-Eingriff.
+- Keine produktive Installation, Veröffentlichung oder automatischer Push.
+
 ## 0.0.1 — M0, unveröffentlicht
 
 - Lokale Repository-Struktur und Plugin-Rahmen auf Basis des offiziellen Templates.
