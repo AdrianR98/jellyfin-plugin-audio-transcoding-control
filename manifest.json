@@ -3,8 +3,8 @@
     "category": "General",
     "guid": "c48a5098-04e0-4de5-a46c-8adae788f91b",
     "name": "Jellyfin Audio Transcoding Control",
-    "description": "Unveröffentlichte M0-Vorlage für gerätespezifische Audio-Transcoding-Regeln.",
-    "overview": "Initialversion 0.0.1. Keine veröffentlichten Pakete; noch keine Wiedergaberegeln.",
+    "description": "Unveröffentlichte Katalogvorlage für gerätespezifische Audio-Transcoding-Regeln.",
+    "overview": "Version 0.1.0. Lokales Praxistestpaket; keine veröffentlichten Download-Versionen.",
     "owner": "AdrianR98",
     "versions": []
   }

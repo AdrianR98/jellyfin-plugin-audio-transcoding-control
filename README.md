@@ -2,7 +2,9 @@
 
 Eigenständiger Server-Plugin-Prototyp zur gerätespezifischen Steuerung von Audio-Transcoding. Unterstützte Mehrkanaltonspuren können serverseitig auf AC3 mit höchstens sechs Kanälen und 640 kbit/s begrenzt werden.
 
-**Stand: M1-Prototyp, Version 0.0.1, unveröffentlicht.** Die Regel ist standardmäßig aus und gilt ausschließlich für ein exakt konfiguriertes Device-ID-/Benutzer-ID-Paar. Ein isolierter nativer Jellyfin-Server hat den vollständigen Pfad bis zu einem echten 4K-HEVC/AC3-HLS-Segment nachgewiesen. Die echte Android-TV-/Fire-TV-/ARC-Kette wurde nicht getestet. [Nachweise und Grenzen](docs/m1-verification.md).
+**Stand: M1.1-Praxistestvorbereitung, Version 0.1.0, unveröffentlicht.** Die Regel ist standardmäßig aus und gilt ausschließlich für ein exakt konfiguriertes Device-ID-/Benutzer-ID-Paar. Ein isolierter nativer Jellyfin-Server hat den vollständigen Pfad bis zu einem echten 4K-HEVC/AC3-HLS-Segment nachgewiesen. Die echte Android-TV-/Fire-TV-/ARC-Kette wurde nicht getestet. [Nachweise und Grenzen](docs/m1-verification.md).
+
+Die kontrollierte Installations-/Rollback-Vorbereitung und Testmatrix stehen in [docs/practice-test.md](docs/practice-test.md). Produktive Installation und Neustart benötigen weiterhin ausdrückliche Freigabe.
 
 ## Zielumgebung
 

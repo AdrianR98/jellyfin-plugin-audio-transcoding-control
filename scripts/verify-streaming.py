@@ -36,7 +36,7 @@ def main():
 <EnableIPv4>true</EnableIPv4><EnableIPv6>false</EnableIPv6><AutoDiscovery>false</AutoDiscovery><EnableRemoteAccess>false</EnableRemoteAccess>
 <LocalNetworkAddresses><string>127.0.0.1</string></LocalNetworkAddresses></NetworkConfiguration>''', encoding='utf-8')
     (run / 'config/logging.json').write_text(json.dumps({'Serilog': {'MinimumLevel': {'Default': 'Information', 'Override': {'Jellyfin.Plugin.AudioTranscodingControl': 'Debug'}}}}), encoding='utf-8')
-    plugin_dir = run / 'data/plugins/AudioTranscodingControl_0.0.1.0'
+    plugin_dir = run / 'data/plugins/Jellyfin.Plugin.AudioTranscodingControl_0.1.0.0'
     plugin_dir.mkdir(parents=True)
     shutil.copy2(plugin, plugin_dir / plugin.name)
 

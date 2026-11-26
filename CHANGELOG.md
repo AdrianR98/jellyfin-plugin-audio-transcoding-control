@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 — M1.1, lokal paketiert, unveröffentlicht
+
+- Installierbares lokales ZIP mit SHA256, ohne Host-/Entwicklungsbibliotheken.
+- Sichere Installations-/Deaktivierungs-/Rollback-Werkzeuge mit WhatIf und Eigentumsprotokoll; Praxistestmatrix und private lokale Zielkonfiguration.
+- Produktiver Server nur lesend untersucht; keine Installation und kein Neustart. Audio-Regellogik unverändert gegenüber M1.
+
 ## 0.0.1 — M1-Prototyp, weiterhin unveröffentlicht
 
 - Echte PlaybackInfoDto-/Controller-Anbindung mit exakter Device-/Benutzerregel und standardmäßig deaktivierter Verarbeitung.
