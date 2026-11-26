@@ -1,0 +1,47 @@
+{
+  "checkedOn": "2026-11-26",
+  "repositories": [
+    {
+      "name": "server",
+      "url": "https://github.com/jellyfin/jellyfin",
+      "ref": "v10.11.11",
+      "commit": "1fbd8739292cce610231be93daf43368733edf63"
+    },
+    {
+      "name": "android",
+      "url": "https://github.com/jellyfin/jellyfin-androidtv",
+      "ref": "v0.20.0",
+      "commit": "45c52925661ff51427cea46ebabcd3de656276cc"
+    },
+    {
+      "name": "template",
+      "url": "https://github.com/jellyfin/jellyfin-plugin-template",
+      "ref": null,
+      "commit": "c93225a0a5a76d3843db05b4b5b77fcfc482fba3"
+    },
+    {
+      "name": "reference",
+      "url": "https://github.com/upchui/Jellyfin-DirectPlayForce",
+      "ref": null,
+      "commit": "4b6abc8325f3b7ad8a7c90e062dd52154dd60547"
+    }
+  ],
+  "restoredPackageEvidence": [
+    {
+      "id": "Jellyfin.Controller",
+      "version": "10.11.11",
+      "license": "GPL-3.0-only",
+      "targetFramework": "net9.0",
+      "repositoryCommit": "1fbd8739292cce610231be93daf43368733edf63",
+      "metadataUrl": "https://api.nuget.org/v3-flatcontainer/jellyfin.controller/10.11.11/jellyfin.controller.nuspec"
+    },
+    {
+      "id": "Jellyfin.Model",
+      "version": "10.11.11",
+      "license": "GPL-3.0-only",
+      "targetFramework": "net9.0",
+      "repositoryCommit": "1fbd8739292cce610231be93daf43368733edf63",
+      "metadataUrl": "https://api.nuget.org/v3-flatcontainer/jellyfin.model/10.11.11/jellyfin.model.nuspec"
+    }
+  ]
+}
