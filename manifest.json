@@ -8,6 +8,14 @@
     "owner": "AdrianR98",
     "versions": [
       {
+        "version": "0.2.2.0",
+        "changelog": "Fix audio-only permission source rejection and unique implicit-source selection; support negotiated progressive MKV AC3 with native video copy policy. Add searchable checkbox selections, field-specific validation and actual HTTP status diagnostics. Schema 2 and GUID unchanged; real Fire TV playback remains to be verified.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/download/v0.2.2/Jellyfin.Plugin.AudioTranscodingControl-0.2.2.zip",
+        "checksum": "d492472ef6ae08e453515ddb8844acf0",
+        "timestamp": "2026-11-27T11:40:00Z"
+      },
+      {
         "version": "0.2.1.0",
         "changelog": "Dashboard hotfix: fix native Jellyfin Web 10.11.11 device loading; recoverable initialization, direct Plugins sidebar entry, localized errors and sanitized frontend/server diagnostics. Schema 2 and playback policies unchanged.",
         "targetAbi": "10.11.11.0",

@@ -26,7 +26,9 @@ public sealed class MvcSeamTests
         new PluginServiceRegistrator().RegisterServices(services, null!);
         services.Configure<MvcOptions>(options => options.Filters.Clear());
         using var provider = services.BuildServiceProvider();
-        var filter = Assert.IsType<ServiceFilterAttribute>(Assert.Single(provider.GetRequiredService<IOptions<MvcOptions>>().Value.Filters));
+        var filters = provider.GetRequiredService<IOptions<MvcOptions>>().Value.Filters.OfType<ServiceFilterAttribute>().ToArray();
+        var filter = Assert.Single(filters, f => f.ServiceType == typeof(PlaybackInfoActionFilter));
+        Assert.Single(filters, f => f.ServiceType == typeof(ProgressiveAudioActionFilter));
         Assert.Equal(typeof(PlaybackInfoActionFilter), filter.ServiceType);
         using var first = provider.CreateScope();
         using var second = provider.CreateScope();
@@ -75,7 +77,7 @@ public sealed class MvcSeamTests
         var context = new ActionExecutingContext(action, [], new Dictionary<string, object?>(), new object());
         var expected = new InvalidOperationException("test sentinel");
         var calls = 0;
-        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => new PlaybackInfoActionFilter(null!, null!, null!, null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackInfoActionFilter>.Instance).OnActionExecutionAsync(context, () =>
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => new PlaybackInfoActionFilter(null!, null!, null!, null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlaybackInfoActionFilter>.Instance, null!).OnActionExecutionAsync(context, () =>
         {
             calls++;
             throw expected;

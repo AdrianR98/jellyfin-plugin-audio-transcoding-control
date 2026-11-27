@@ -1,0 +1,43 @@
+{
+  "serverVersion": "10.11.11",
+  "pluginVersion": "0.2.2.0",
+  "syntheticMedia": true,
+  "checks": {
+    "implicitSingleLocalSource": true,
+    "audioPermissionTrueVideoAndRemuxFalse": true,
+    "outputVideo": {
+      "codec_name": "hevc",
+      "codec_type": "video",
+      "width": 3840,
+      "height": 2160
+    },
+    "nativeGeneratedProgressiveUrl": {
+      "codec_name": "ac3",
+      "channels": 6,
+      "bit_rate": "640000"
+    },
+    "unnegotiatedRequestRetainsAac": true,
+    "unmatchedDeviceRetainsAac": true,
+    "compatibleAc3CopyWithRemuxPermission": true,
+    "ffmpegVideoCopy": true,
+    "ffmpegAudioAc3SixChannels640000": true,
+    "truehdProgressiveMkv": {
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 6,
+      "bit_rate": "640000"
+    }
+  },
+  "limits": [
+    "Synthetic HEVC SDR source, no Fire TV operated.",
+    "No receiver, Atmos output, HDR or Dolby Vision preservation proof.",
+    "DTS 6.1 resolution is covered by a focused fixture; not a native DTS bitstream in this check.",
+    "Synthetic TrueHD encoder produced six input channels; eight-channel TrueHD is covered by the focused fixture, not this native sample."
+  ],
+  "syntheticInputAudio": {
+    "codec": "truehd",
+    "channels": 6
+  },
+  "checkedOn": "2026-11-27",
+  "nativeFfmpegArguments": "-codec:v:0 copy -codec:a:0 ac3 -ac 6 -ab 640000"
+}

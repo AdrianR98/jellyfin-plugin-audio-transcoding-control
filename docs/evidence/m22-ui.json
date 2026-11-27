@@ -1,0 +1,18 @@
+{
+  "nativeVersion": "10.11.11",
+  "checkboxSelectionsSurviveFilterAndSaveReload": true,
+  "fieldReasons": [
+    "device-selection-required",
+    "user-selection-required"
+  ],
+  "fieldHighlighting": true,
+  "rulePositionAndInternalId": true,
+  "realHttpStatuses": [
+    200,
+    204
+  ],
+  "unknownStatusExplicit": true,
+  "savedAndEnabledRuleCounts": true,
+  "nativeUiBridgeVerified": true,
+  "rawIdentityCheck": "passed"
+}

@@ -12,8 +12,13 @@ internal static class Ac3ProfileTransformer
     internal static DeviceProfile? Transform(DeviceProfile original) => Transform(original, new TranscodingRule());
 
     internal static DeviceProfile? Transform(DeviceProfile original, TranscodingRule rule, bool forceReencode = false)
+        => Transform(original, rule, forceReencode, out _);
+
+    internal static DeviceProfile? Transform(DeviceProfile original, TranscodingRule rule, bool forceReencode, out string reason)
     {
+        reason = "invalid-ac3-rule";
         if (ConfigurationMigration.RuleError(rule) is not null) return null;
+        reason = "profile-derived-or-malformed";
         // Reject derived or malformed profiles rather than losing unknown state during cloning.
         if (original.GetType() != typeof(DeviceProfile) || original.TranscodingProfiles is null
             || original.DirectPlayProfiles is null || original.CodecProfiles is null
@@ -28,6 +33,7 @@ internal static class Ac3ProfileTransformer
             return null;
         }
 
+        reason = "profile-ac3-channel-cap-below-rule";
         // A client that restricts AC3 to fewer channels has not offered the multichannel path required here.
         if (original.CodecProfiles.Any(p => p.Type == CodecType.VideoAudio && (string.IsNullOrEmpty(p.Codec) || ContainsAc3(p.Codec))
             && p.Conditions.Any(c => c.Property == ProfileConditionValue.AudioChannels
@@ -38,12 +44,17 @@ internal static class Ac3ProfileTransformer
         }
 
         var paths = original.TranscodingProfiles.Where(p => p.Type == DlnaProfileType.Video && p.Context == EncodingContext.Streaming).ToArray();
-        if (paths.Length == 0 || paths.Any(p => p.Protocol != MediaStreamProtocol.hls
-            || (p.Container != "ts" && p.Container != "mp4") || !ContainsAc3(p.AudioCodec)
-            || (!string.IsNullOrEmpty(p.MaxAudioChannels)
-                && (!int.TryParse(p.MaxAudioChannels, NumberStyles.None, CultureInfo.InvariantCulture, out var cap) || cap < rule.MaxAudioChannels))))
+        reason = "profile-no-video-streaming-path";
+        if (paths.Length == 0) return null;
+        foreach (var path in paths)
         {
-            return null;
+            reason = path.Protocol == MediaStreamProtocol.hls ? path.Container is "ts" or "mp4" ? "profile-ac3-not-offered" : "profile-hls-container-unsupported"
+                : path.Protocol == MediaStreamProtocol.http && path.Container is "mkv" or "matroska" ? "profile-ac3-not-offered" : "profile-protocol-unsupported";
+            if (!((path.Protocol == MediaStreamProtocol.hls && path.Container is "ts" or "mp4")
+                || (path.Protocol == MediaStreamProtocol.http && path.Container is "mkv" or "matroska")) || !ContainsAc3(path.AudioCodec)) return null;
+            reason = "profile-transcode-channel-cap-below-rule";
+            if (!string.IsNullOrEmpty(path.MaxAudioChannels)
+                && (!int.TryParse(path.MaxAudioChannels, NumberStyles.None, CultureInfo.InvariantCulture, out var cap) || cap < rule.MaxAudioChannels)) return null;
         }
 
         var copy = JsonSerializer.Deserialize<DeviceProfile>(JsonSerializer.SerializeToUtf8Bytes(original))!;
@@ -82,6 +93,7 @@ internal static class Ac3ProfileTransformer
             }, .. copy.CodecProfiles];
         }
 
+        reason = "profile-transformed";
         return copy;
     }
 

@@ -169,7 +169,7 @@ public sealed class PlaybackInfoIntegrationTests
         AllowAudioStreamCopy = true, AllowVideoStreamCopy = true,
     };
 
-    private static TestServer CreateServer(HostFixture fixture, Action<PluginConfiguration>? alter = null) => new(new WebHostBuilder()
+    internal static TestServer CreateServer(HostFixture fixture, Action<PluginConfiguration>? alter = null) => new(new WebHostBuilder()
         .ConfigureServices(services =>
         {
             fixture.Register(services);
@@ -194,7 +194,7 @@ public sealed class PlaybackInfoIntegrationTests
             app.UseEndpoints(endpoints => endpoints.MapControllers());
         }));
 
-    private static async Task<PlaybackInfoResponse> Playback(TestServer server, HostFixture fixture, PlaybackInfoDto request)
+    internal static async Task<PlaybackInfoResponse> Playback(TestServer server, HostFixture fixture, PlaybackInfoDto request)
     {
         using var client = server.CreateClient();
         using var response = await client.PostAsJsonAsync($"/Items/{fixture.Video.Id}/PlaybackInfo", request);
