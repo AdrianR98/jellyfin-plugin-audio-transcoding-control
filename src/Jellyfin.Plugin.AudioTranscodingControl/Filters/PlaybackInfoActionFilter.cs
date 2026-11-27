@@ -34,6 +34,8 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
     private static readonly bool HostCompatible = typeof(IUserManager).Assembly.GetName().Version == new Version(10, 11, 11, 0)
         && typeof(PlaybackInfoDto).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             .EndsWith("+1fbd8739292cce610231be93daf43368733edf63", StringComparison.Ordinal) == true;
+    internal static bool IsHostCompatible => HostCompatible;
+    private readonly PlaybackPolicySessions _sessions;
     private readonly IOptionsSnapshot<PluginConfiguration> _options;
     private readonly IUserManager _users;
     private readonly ILibraryManager _library;
@@ -47,11 +49,12 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
     /// <param name="library">Access-aware native library.</param>
     /// <param name="sources">Native source metadata.</param>
     /// <param name="encoder">Native encoder capabilities.</param>
+    /// <param name="sessions">Bounded proof of validated playback negotiation.</param>
     /// <param name="logger">Native logging category.</param>
     public PlaybackInfoActionFilter(IOptionsSnapshot<PluginConfiguration> options, IUserManager users,
-        ILibraryManager library, IMediaSourceManager sources, IMediaEncoder encoder, ILogger<PlaybackInfoActionFilter> logger)
+        ILibraryManager library, IMediaSourceManager sources, IMediaEncoder encoder, ILogger<PlaybackInfoActionFilter> logger, PlaybackPolicySessions sessions)
     {
-        _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _logger = logger;
+        _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _logger = logger; _sessions = sessions;
     }
 
     /// <inheritdoc />
@@ -120,6 +123,13 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         var analysisStarted = Stopwatch.GetTimestamp();
         try
         {
+            if (applied && context.HttpContext.Items.TryGetValue(typeof(PreparedPolicy), out var prepared) && prepared is PreparedPolicy proof
+                && result.Result is ObjectResult { Value: PlaybackInfoResponse { ErrorCode: null, PlaySessionId: not null } info }
+                && info.MediaSources.Count(source => string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase)) == 1)
+            {
+                var retained = _sessions.Remember(info.PlaySessionId, proof);
+                diagnostics.Write(LogLevel.Debug, 2403, "Validated PlaybackInfo context; retained={Retained}; scoped-progressive-MKV=true; no-identity-or-session-id-logged=true", retained);
+            }
             if (selected?.EnableDiagnostics == true && config.Diagnostics.PlaybackResponseAnalysis)
                 AnalyzeResponse(result, selected, applied, diagnostics);
         }
@@ -136,40 +146,48 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
             diagnostics.Write(LogLevel.Debug, 2201, "Policy skipped; reason={Reason}; ruleId={RuleId}; original-request-retained", reason, rule.Id);
             return false;
         }
-        if (!HostCompatible || !context.ActionArguments.TryGetValue("playbackInfoDto", out var value)
-            || value is not PlaybackInfoDto dto || value.GetType() != typeof(PlaybackInfoDto) || dto.DeviceProfile is null)
-            return Skip("unsupported-or-missing-dto-profile");
+        if (!HostCompatible) return Skip("host-version-unsupported");
+        if (!context.ActionArguments.TryGetValue("playbackInfoDto", out var value) || value is not PlaybackInfoDto dto || value.GetType() != typeof(PlaybackInfoDto)) return Skip("playback-dto-missing-or-derived");
+        if (dto.DeviceProfile is null) return Skip("device-profile-missing");
         if (!RuleEvaluator.Identity(context.HttpContext.User, out _, out var userId)) return Skip("invalid-identity");
         T? Argument<T>(string name) where T : struct => context.ActionArguments.TryGetValue(name, out var v) && v is T typed ? typed : null;
         string? TextArgument(string name) => context.ActionArguments.TryGetValue(name, out var v) ? v as string : null;
         var requestedUser = Argument<Guid>("userId") ?? dto.UserId;
         var maxChannels = Argument<int>("maxAudioChannels") ?? dto.MaxAudioChannels;
-        if ((requestedUser.HasValue && requestedUser.Value != Guid.Empty && requestedUser != userId)
-            || !(Argument<bool>("enableTranscoding") ?? dto.EnableTranscoding ?? true)
-            || (maxChannels.HasValue && maxChannels < rule.MaxAudioChannels)
-            || !string.IsNullOrEmpty(TextArgument("liveStreamId") ?? dto.LiveStreamId)) return Skip("request-policy-or-scope-restriction");
-
+        var enableTranscoding = Argument<bool>("enableTranscoding") ?? dto.EnableTranscoding ?? true;
+        diagnostics.Write(LogLevel.Debug, 2202, "Requested playback limits; enableTranscoding={Transcoding}; allowVideoCopy={VideoCopy}; allowAudioCopy={AudioCopy}; maxChannels={MaxChannels}; liveStreamPresent={Live}",
+            enableTranscoding, Argument<bool>("allowVideoStreamCopy") ?? dto.AllowVideoStreamCopy ?? true,
+            Argument<bool>("allowAudioStreamCopy") ?? dto.AllowAudioStreamCopy ?? true, maxChannels, !string.IsNullOrEmpty(TextArgument("liveStreamId") ?? dto.LiveStreamId));
+        if (requestedUser.HasValue && requestedUser.Value != Guid.Empty && requestedUser != userId) return Skip("request-user-mismatch");
+        if (!enableTranscoding) return Skip("request-transcoding-disabled");
+        if (maxChannels.HasValue && maxChannels < rule.MaxAudioChannels) return Skip("request-channel-cap-below-rule");
+        if (!string.IsNullOrEmpty(TextArgument("liveStreamId") ?? dto.LiveStreamId)) return Skip("request-live-stream-unsupported");
         var user = _users.GetUserById(userId);
-        if (rule.EnableDiagnostics)
-            diagnostics.Write(LogLevel.Debug, 2200, "Effective native permissions; playback={Playback}; audioTranscode={AudioTranscode}; videoTranscode={VideoTranscode}; remux={Remux}",
-                user?.HasPermission(PermissionKind.EnableMediaPlayback) ?? false, user?.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding) ?? false,
-                user?.HasPermission(PermissionKind.EnableVideoPlaybackTranscoding) ?? false, user?.HasPermission(PermissionKind.EnablePlaybackRemuxing) ?? false);
-        if (user is null || user.Id != userId || !user.HasPermission(PermissionKind.EnableMediaPlayback)
-            || !user.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding) || !_encoder.CanEncodeToAudioCodec("ac3"))
-            return Skip("audio-transcoding-denied-or-encoder-unavailable");
+        diagnostics.Write(LogLevel.Debug, 2200, "Effective native permissions; playback={Playback}; audioTranscode={AudioTranscode}; videoTranscode={VideoTranscode}; remux={Remux}",
+            user?.HasPermission(PermissionKind.EnableMediaPlayback) ?? false, user?.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding) ?? false,
+            user?.HasPermission(PermissionKind.EnableVideoPlaybackTranscoding) ?? false, user?.HasPermission(PermissionKind.EnablePlaybackRemuxing) ?? false);
+        if (user is null || user.Id != userId) return Skip("user-not-found");
+        if (!user.HasPermission(PermissionKind.EnableMediaPlayback)) return Skip("media-playback-denied");
+        if (!user.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding)) return Skip("audio-transcoding-denied");
+        if (!_encoder.CanEncodeToAudioCodec("ac3")) return Skip("ac3-encoder-unavailable");
         var itemId = Argument<Guid>("itemId");
         if (!itemId.HasValue || _library.GetItemById<BaseItem>(itemId.Value, user) is not Video video) return Skip("not-accessible-local-video");
-        var sourceId = TextArgument("mediaSourceId") ?? dto.MediaSourceId;
-        if (string.IsNullOrEmpty(sourceId)) return Skip("explicit-source-required");
+        var querySource = TextArgument("mediaSourceId");
+        var sourceId = querySource ?? dto.MediaSourceId;
         var sources = await _sources.GetPlaybackMediaSources(video, user, true, false, context.HttpContext.RequestAborted).ConfigureAwait(false);
-        var candidates = sources.Where(s => string.Equals(s.Id, sourceId, StringComparison.Ordinal)).ToArray();
-        if (candidates.Length != 1 || candidates[0] is not { IsRemote: false, IsInfiniteStream: false, RequiresOpening: false, SupportsTranscoding: true, Protocol: MediaProtocol.File } source)
-            return Skip("unsupported-or-ambiguous-source");
-        var audioIndex = Argument<int>("audioStreamIndex") ?? dto.AudioStreamIndex ?? source.DefaultAudioStreamIndex;
-        var tracks = source.MediaStreams.Where(s => s.Type == MediaStreamType.Audio && s.Index == audioIndex).ToArray();
-        if (tracks.Length != 1 || tracks[0].IsExternal || tracks[0].Channels is not (1 or 2 or 6 or 8)
-            || tracks[0].Codec is not ("ac3" or "aac" or "eac3" or "truehd" or "dts" or "dca")) return Skip("unsupported-or-ambiguous-track");
-        var audio = tracks[0];
+        var source = SourceSelection.Resolve(sources, sourceId, out var sourceReason);
+        diagnostics.Write(LogLevel.Debug, 2210, "Source resolution; idPresent={IdPresent}; selectionOrigin={Origin}; available={Available}; unique={Unique}; reason={Reason}",
+            !string.IsNullOrEmpty(sourceId), querySource is not null ? "query" : !string.IsNullOrEmpty(dto.MediaSourceId) ? "body" : "single-source-fallback", sources.Count, source is not null, sourceReason);
+        if (source is null) return Skip(sourceReason);
+        diagnostics.Write(LogLevel.Debug, 2211, "Resolved local source; container={Container}; protocol={Protocol}; nativeVideoTranscodeFlag={NativeTranscode}; nativeDirectStreamFlag={NativeDirectStream}; audioPermissionCheckedSeparately=true",
+            SourceSelection.Container(source.Container), source.Protocol.ToString(), source.SupportsTranscoding, source.SupportsDirectStream);
+        var queryAudio = Argument<int>("audioStreamIndex");
+        var audioIndex = queryAudio ?? dto.AudioStreamIndex;
+        var audio = SourceSelection.Audio(source, audioIndex, out var audioReason);
+        diagnostics.Write(LogLevel.Debug, 2212, "Audio resolution; indexPresent={IndexPresent}; origin={Origin}; resolvedIndex={Index}; codec={Codec}; channels={Channels}; reason={Reason}",
+            audioIndex.HasValue, queryAudio.HasValue ? "query" : dto.AudioStreamIndex.HasValue ? "body" : source.DefaultAudioStreamIndex.HasValue ? "native-default" : "single-track-fallback",
+            audio?.Index, PluginDiagnostics.Codec(audio?.Codec), audio?.Channels, audioReason);
+        if (audio is null) return Skip(audioReason);
         if (rule.EnableDiagnostics)
         {
             var inputVideo = source.MediaStreams.FirstOrDefault(s => s.Type == MediaStreamType.Video);
@@ -181,16 +199,23 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         if (rule.PreserveStereo && audio.Channels <= 2) return Skip("stereo-preserved");
         var forceReencode = !rule.PreserveCompatibleAudio && audio.Codec == "ac3";
         var transformStarted = Stopwatch.GetTimestamp();
-        var transformed = Ac3ProfileTransformer.Transform(dto.DeviceProfile, rule, forceReencode);
+        diagnostics.Write(LogLevel.Debug, 2399, "Native video streaming profiles; count={Count}; offeredAc3={Ac3Offered}",
+            dto.DeviceProfile.TranscodingProfiles?.Count(p => p?.Type == DlnaProfileType.Video),
+            dto.DeviceProfile.TranscodingProfiles?.Any(p => p?.AudioCodec?.Split(',').Any(c => c.Trim().Equals("ac3", StringComparison.OrdinalIgnoreCase)) == true));
+        var position = 0;
+        foreach (var path in dto.DeviceProfile.TranscodingProfiles?.Where(p => p is not null && p.Type == DlnaProfileType.Video).Take(8) ?? [])
+            diagnostics.Write(LogLevel.Debug, 2398, "Offered video streaming profile; position={Position}; container={Container}; protocol={Protocol}; audio={Audio}; video={Video}; channelLimit={Channels}",
+                ++position, SourceSelection.Container(path.Container), path.Protocol.ToString(), PluginDiagnostics.Codec(path.AudioCodec), PluginDiagnostics.Codec(path.VideoCodec), int.TryParse(path.MaxAudioChannels, out var cap) ? cap : (int?)null);
+        var transformed = Ac3ProfileTransformer.Transform(dto.DeviceProfile, rule, forceReencode, out var profileReason);
         if (options.PerformanceMeasurements && rule.EnableDiagnostics)
             diagnostics.Write(LogLevel.Debug, 2992, "Profile transformation durationMs={DurationMs}", Stopwatch.GetElapsedTime(transformStarted).TotalMilliseconds);
-        if (transformed is null) return Skip("unsupported-profile-path-or-limits");
+        if (transformed is null) return Skip(profileReason);
 
         if (rule.EnableDiagnostics && options.DeviceProfileChanges && diagnostics.Enabled(LogLevel.Debug))
         {
             var videoConstraintsSame = JsonSerializer.Serialize(dto.DeviceProfile.CodecProfiles.Where(p => p.Type == CodecType.Video))
                 == JsonSerializer.Serialize(transformed.CodecProfiles.Where(p => p.Type == CodecType.Video));
-            var videoOffersSame = dto.DeviceProfile.TranscodingProfiles.Select(p => p.VideoCodec).SequenceEqual(transformed.TranscodingProfiles.Select(p => p.VideoCodec));
+            var videoOffersSame = dto.DeviceProfile.TranscodingProfiles!.Select(p => p.VideoCodec).SequenceEqual(transformed.TranscodingProfiles.Select(p => p.VideoCodec));
             diagnostics.Write(LogLevel.Debug, 2400, "Profile change; directProfilesBefore={Before}; directProfilesAfter={After}; addedAc3Guard=true; target={Target}; maxChannels={MaxChannels}; maxBitrate={MaxBitrate}; videoConstraintsUnchanged={VideoConstraints}; videoOffersUnchanged={VideoOffers}; forceAudioReencode={ForceAudioReencode}",
                 dto.DeviceProfile.DirectPlayProfiles.Length, transformed.DirectPlayProfiles.Length, rule.TargetCodec, rule.MaxAudioChannels, rule.MaxAudioBitrate, videoConstraintsSame, videoOffersSame, forceReencode);
             if (diagnostics.Enabled(LogLevel.Trace))
@@ -201,6 +226,8 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         // Only narrow native audio-copy permission when the user explicitly requests re-encoding of AC3.
         // Video permissions and all other action arguments remain untouched.
         if (forceReencode) context.ActionArguments["allowAudioStreamCopy"] = false;
+        RuleEvaluator.Identity(context.HttpContext.User, out var device, out _);
+        context.HttpContext.Items[typeof(PreparedPolicy)] = new PreparedPolicy(userId, device, itemId.Value, source.Id, audio.Index, PlaybackPolicySessions.Fingerprint(rule));
         dto.DeviceProfile = transformed;
         return true;
     }

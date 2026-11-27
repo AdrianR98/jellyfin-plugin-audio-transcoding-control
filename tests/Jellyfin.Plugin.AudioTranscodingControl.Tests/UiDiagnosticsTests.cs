@@ -19,6 +19,9 @@ public sealed class UiDiagnosticsTests
         var entry = new UiDiagnosticEvent { Event = "error", Step = "configuration", Code = "invalid-schema", Kind = "TypeError", Sequence = 1, Frames = ["normalize:123:4"] };
         var batch = new UiDiagnosticBatch { SessionId = Guid.NewGuid(), Events = [entry] };
         Assert.IsType<NoContentResult>(controller.Post(batch));
+        entry.Status = 204; Assert.IsType<NoContentResult>(controller.Post(batch));
+        entry.Status = 0; Assert.IsType<BadRequestResult>(controller.Post(batch));
+        entry.Status = null;
         entry.Frames = ["https://sentinel.invalid/private"];
         Assert.IsType<BadRequestResult>(controller.Post(batch));
         entry.Frames = []; entry.Element = "arbitrary-client-text";

@@ -8,7 +8,14 @@
 #ATCConfigPage .atc-card{border:1px solid var(--line-color,rgba(128,128,128,.4));border-radius:.4em;padding:.8em;margin:.6em 0}
 #ATCConfigPage .atc-card[aria-current=true]{border-color:var(--accent,#00a4dc)}
 #ATCConfigPage .atc-card-title{font-weight:600;overflow-wrap:anywhere}
-#ATCConfigPage .atc-picks{min-height:10em;width:100%;max-width:100%}
+#ATCConfigPage .atc-picks{max-height:28em;overflow:auto;width:100%;border:1px solid #8886;border-radius:.3em}
+#ATCConfigPage .atc-choice-row{display:flex;align-items:flex-start;gap:.8em;padding:.8em;cursor:pointer;border-bottom:1px solid #8884;white-space:normal;overflow-wrap:anywhere}
+#ATCConfigPage .atc-choice-row.atc-selected{background:rgba(0,164,220,.16);border-inline-start:.25em solid #00a4dc}
+#ATCConfigPage .atc-choice-row input{flex-shrink:0;margin-top:.2em;width:1.25em;height:1.25em;accent-color:var(--accent,#00a4dc)}
+#ATCConfigPage .atc-choice-text{display:block;min-width:0;white-space:normal;overflow-wrap:anywhere}
+#ATCConfigPage .atc-choice-detail{display:block;opacity:.8;font-size:.9em;line-height:1.5;margin-top:.25em}
+#ATCConfigPage .atc-invalid{outline:2px solid #e37373;outline-offset:2px}
+#ATCConfigPage .atc-field-error{color:#f2a1a1;line-height:1.4;margin:.6em 0}
 #ATCConfigPage fieldset{border:1px solid rgba(128,128,128,.4);padding:1em;margin:1.2em 0;min-width:0}
 #ATCConfigPage .atc-note{white-space:pre-line;overflow-wrap:anywhere;line-height:1.5}
 #ATCConfigPage .atc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17em),1fr));gap:1em}
@@ -30,8 +37,8 @@
 <div class="inputContainer"><label class="inputLabel" for="atcName" data-t="name">Rule name</label><input is="emby-input" id="atcName" type="text" maxlength="80"></div>
 <div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcEnabled"><span data-t="enabled">Rule enabled</span></label></div>
 <div class="atc-grid">
-<div><h4 data-t="devices">Devices</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllDevices"><span data-t="allDevices">All devices (explicit)</span></label></div><label for="atcDevices" class="fieldDescription" data-t="deviceHelp">Choose one or more devices. Empty selection never means all.</label><select is="emby-select" id="atcDevices" multiple class="atc-picks" aria-label="Devices"></select></div>
-<div><h4 data-t="users">Users</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllUsers"><span data-t="allUsers">All users (explicit)</span></label></div><label for="atcUsers" class="fieldDescription" data-t="userHelp">Choose one or more users. Device AND user must match.</label><select is="emby-select" id="atcUsers" multiple class="atc-picks" aria-label="Users"></select></div>
+<div><h4 data-t="devices">Devices</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllDevices"><span data-t="allDevices">All devices (explicit)</span></label></div><label for="atcDevices" class="fieldDescription" data-t="deviceHelp">Choose one or more devices. Empty selection never means all.</label><div class="inputContainer"><label for="atcDeviceSearch" data-t="searchDevices">Search devices</label><input is="emby-input" type="search" id="atcDeviceSearch" autocomplete="off"></div><p id="atcDeviceCount" aria-live="polite"></p><div id="atcDevices" class="atc-picks" role="group" aria-label="Devices" tabindex="-1"></div></div>
+<div><h4 data-t="users">Users</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllUsers"><span data-t="allUsers">All users (explicit)</span></label></div><label for="atcUsers" class="fieldDescription" data-t="userHelp">Choose one or more users. Device AND user must match.</label><div class="inputContainer"><label for="atcUserSearch" data-t="searchUsers">Search users</label><input is="emby-input" type="search" id="atcUserSearch" autocomplete="off"></div><p id="atcUserCount" aria-live="polite"></p><div id="atcUsers" class="atc-picks" role="group" aria-label="Users" tabindex="-1"></div></div>
 </div>
 <div class="atc-grid">
 <div class="selectContainer"><label class="selectLabel" for="atcCodec" data-t="codec">Target codec</label><select is="emby-select" id="atcCodec"><option value="ac3">AC3 (Dolby Digital)</option></select></div>
@@ -63,7 +70,7 @@
 <script>
 (function () {
     'use strict';
-    const uiVersion = '0.2.1.0';
+    const uiVersion = '0.2.2.0';
     const candidates = document.querySelectorAll('#ATCConfigPage');
     const page = document.currentScript && document.currentScript.closest('#ATCConfigPage') || candidates[candidates.length - 1];
     if (!page) { console.error('[ATC:UI] interface: missing page root; version=' + uiVersion); return; }
@@ -76,10 +83,13 @@
     };
     Object.assign(words.en, {saveRetry:'Your edits are retained. Retry Save, or use Reload to discard them.', configurationError:'Configuration could not be loaded.', devicesError:'Device list could not be loaded.', usersError:'User list could not be loaded.', saveError:'Configuration could not be saved.', interfaceError:'Plugin interface initialization failed.', retry:'Use Reload to try again. Editing and saving are disabled until all data loads.', loading:'Loading configuration, devices and users…', saving:'Saving configuration…', ready:'Configuration, devices and users loaded.', httpError:'HTTP status', unavailableStatus:'HTTP status unavailable', inspectReport:'See the sanitized interface diagnostics below.', diagnosticReport:'Sanitized interface diagnostics', diagnosticHelp:'No credentials, identities or HTTP payloads. Copy this report when reporting an interface failure.', copyReport:'Copy report', copied:'Sanitized report copied.', selectReport:'Report selected. Use your browser copy command.', emptyRule:'Enabled rules need device and user selections or their explicit All options.'});
     Object.assign(words.de, {saveRetry:'Deine Änderungen bleiben erhalten. Speichern erneut versuchen oder mit Neu laden verwerfen.', configurationError:'Konfiguration konnte nicht geladen werden.', devicesError:'Geräteliste konnte nicht geladen werden.', usersError:'Benutzerliste konnte nicht geladen werden.', saveError:'Konfiguration konnte nicht gespeichert werden.', interfaceError:'Plugin-Oberfläche konnte nicht initialisiert werden.', retry:'Mit Neu laden erneut versuchen. Bearbeiten und Speichern bleiben bis zum vollständigen Laden gesperrt.', loading:'Konfiguration, Geräte und Benutzer werden geladen…', saving:'Konfiguration wird gespeichert…', ready:'Konfiguration, Geräte und Benutzer geladen.', httpError:'HTTP-Status', unavailableStatus:'HTTP-Status nicht verfügbar', inspectReport:'Details stehen unten im bereinigten Diagnosebericht.', diagnosticReport:'Bereinigte Oberflächendiagnose', diagnosticHelp:'Keine Zugangsdaten, Kennungen oder HTTP-Inhalte. Diesen Bericht bei Problemen mit der Oberfläche kopieren.', copyReport:'Bericht kopieren', copied:'Bereinigter Bericht kopiert.', selectReport:'Bericht markiert. Mit der Kopierfunktion des Browsers kopieren.'});
+    Object.assign(words.en,{searchDevices:'Search devices',searchUsers:'Search users',selectedCount:'selected',availableCount:'available',allActive:'All is active; explicit selections are retained',lastActivity:'Last activity',reference:'Reference',selectionEmpty:'No available entries',ruleLabel:'Rule',validationSummary:'Check the highlighted fields.', 'rule-id-missing':'Internal rule ID is missing or invalid. Create a new rule.', 'rule-id-duplicate':'Internal rule ID is duplicated. Duplicate the rule using the interface.', 'rule-name-required':'Enter a rule name.', 'rule-name-too-long':'Use at most 80 characters.', 'target-codec-unsupported':'AC3 is the only supported target codec.', 'audio-channels-invalid':'Choose 1, 2 or 6 channels.', 'audio-bitrate-invalid':'Choose a supported AC3 bitrate.', 'devices-too-many':'Choose at most 256 devices.', 'users-too-many':'Choose at most 256 users.', 'device-id-invalid':'A saved device selection is invalid. Correct the selection.', 'user-id-invalid':'A saved user selection is invalid. Correct the selection.', 'device-selection-required':'Select at least one device or explicitly enable All devices.', 'user-selection-required':'Select at least one user or explicitly enable All users.', 'rules-too-many':'At most 64 rules are supported.', 'logging-level-invalid':'Select a supported logging level.'});
+    Object.assign(words.de,{searchDevices:'Geräte suchen',searchUsers:'Benutzer suchen',selectedCount:'ausgewählt',availableCount:'verfügbar',allActive:'Alle ist aktiv; explizite Auswahlen bleiben erhalten',lastActivity:'Letzte Aktivität',reference:'Referenz',selectionEmpty:'Keine verfügbaren Einträge',ruleLabel:'Regel',validationSummary:'Bitte die hervorgehobenen Felder prüfen.', 'rule-id-missing':'Die interne Regel-ID fehlt oder ist ungültig. Eine neue Regel anlegen.', 'rule-id-duplicate':'Die interne Regel-ID ist doppelt. Die Regel über die Oberfläche duplizieren.', 'rule-name-required':'Einen Regelnamen eingeben.', 'rule-name-too-long':'Höchstens 80 Zeichen verwenden.', 'target-codec-unsupported':'Als Zielcodec wird ausschließlich AC3 unterstützt.', 'audio-channels-invalid':'1, 2 oder 6 Kanäle wählen.', 'audio-bitrate-invalid':'Eine unterstützte AC3-Bitrate wählen.', 'devices-too-many':'Höchstens 256 Geräte wählen.', 'users-too-many':'Höchstens 256 Benutzer wählen.', 'device-id-invalid':'Eine gespeicherte Geräteauswahl ist ungültig. Die Auswahl korrigieren.', 'user-id-invalid':'Eine gespeicherte Benutzerauswahl ist ungültig. Die Auswahl korrigieren.', 'device-selection-required':'Mindestens ein Gerät wählen oder Alle Geräte ausdrücklich aktivieren.', 'user-selection-required':'Mindestens einen Benutzer wählen oder Alle Benutzer ausdrücklich aktivieren.', 'rules-too-many':'Höchstens 64 Regeln sind zulässig.', 'logging-level-invalid':'Eine unterstützte Protokollstufe wählen.'});
     let config, rules = [], selected = -1, devices = [], users = [], loaded = false, dirty = false, busy = false;
     let language = 'en', generation = 0, shown = false, disposed = false, sequence = 0, flushTimer = 0, forwarding = false, serverDiagnostics = true;
+    let validationAttempted=false, validationErrors=[];
     let currentStatus = {key:'loading'}, sessionId;
-    const listeners = [], records = [], pending = [];
+    const listeners = [], records = [], pending = [], httpStatuses = {};
     const t = key => words[language][key] || words.en[key] || key;
     const userKey = value => String(value || '').replace(/-/g, '').toLowerCase();
     const validGuid = value => /^[0-9a-f]{32}$/.test(userKey(value)) && !/^0+$/.test(userKey(value));
@@ -88,7 +98,7 @@
     function status(text) { const target = page.querySelector('#atcStatus'); if (target) target.textContent = text; }
     function showStatus(key, errors) {
         currentStatus = {key, errors};
-        status(errors ? errors.map(e=>t(e.key)+' '+(e.status?t('httpError')+' '+e.status:t('unavailableStatus'))+' ['+e.code+']').join('\n')+'\n'+t(key==='saveError'?'saveRetry':'retry')+' '+t('inspectReport') : t(key));
+        status(errors ? errors.map(e=>t(e.key)+' '+(typeof e.status==='number'?t('httpError')+' '+e.status:t('unavailableStatus'))+' ['+e.code+']').join('\n')+'\n'+t(key==='saveError'?'saveRetry':'retry')+' '+t('inspectReport') : t(key));
     }
     function localize() { page.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); }); showStatus(currentStatus.key, currentStatus.errors); }
     function apiClient() {
@@ -99,10 +109,10 @@
         const kinds=['Error','TypeError','ReferenceError','SyntaxError','RangeError','AbortError','NetworkError'];
         const kind=kinds.includes(error && error.name)?error.name:'Error';
         const rawStatus=Number(error && (error.status || error.response && error.response.status));
-        const httpStatus=Number.isInteger(rawStatus)&&rawStatus>=100&&rawStatus<=599?rawStatus:0;
+        const httpStatus=Number.isInteger(rawStatus)&&rawStatus>=100&&rawStatus<=599?rawStatus:'unknown';
         const codes=['api-unavailable','missing-element','invalid-schema','invalid-configuration','invalid-response','invalid-log-level'];
         const network=kind==='NetworkError'||kind==='TypeError'&&['Failed to fetch','Load failed','NetworkError when attempting to fetch resource.'].includes(error&&error.message);
-        const code=codes.includes(error && error.atcCode)?error.atcCode:httpStatus?'http-error':network?'network-error':'javascript-error';
+        const code=codes.includes(error && error.atcCode)?error.atcCode:typeof httpStatus==='number'?'http-error':network?'network-error':'javascript-error';
         // Retain only known function labels and numeric positions. Never output the raw message/stack/Response.
         const names=['initialize','load','request','save','normalize','renderRules','renderEditor','collectEditor','validate','find','apiClient','listen'];
         const frames=typeof (error && error.stack)==='string'?error.stack.split('\n').slice(1,7).map(line=>{
@@ -110,11 +120,11 @@
             const name=names.find(n=>new RegExp('(?:\\bat\\s+|\\b)'+n+'(?:\\s|@|\\()').test(line))||'external';
             return name+':'+(position?position[1]+':'+position[2]:'0:0');
         }):[];
-        const element=['ATCForm', 'atcLanguage', 'atcMaster', 'atcStatus', 'atcAdd', 'atcReload', 'atcRules', 'atcWarnings', 'atcEditor', 'atcName', 'atcEnabled', 'atcAllDevices', 'atcDevices', 'atcAllUsers', 'atcUsers', 'atcCodec', 'atcChannels', 'atcBitrate', 'atcPreserve', 'atcStereo', 'atcRuleDiagnostics', 'atcLogging', 'atcLogLevel', 'atcLogMatching', 'atcLogProfiles', 'atcLogResponse', 'atcLogPerformance', 'atcDebugPreset', 'atcSave', 'atcReport', 'atcCopyReport'].includes(error&&error.atcElement)?error.atcElement:'none';
+        const element=['ATCForm', 'atcLanguage', 'atcMaster', 'atcStatus', 'atcAdd', 'atcReload', 'atcRules', 'atcWarnings', 'atcEditor', 'atcName', 'atcEnabled', 'atcAllDevices', 'atcDevices', 'atcAllUsers', 'atcUsers', 'atcCodec', 'atcChannels', 'atcBitrate', 'atcPreserve', 'atcStereo', 'atcRuleDiagnostics', 'atcLogging', 'atcLogLevel', 'atcLogMatching', 'atcLogProfiles', 'atcLogResponse', 'atcLogPerformance', 'atcDebugPreset', 'atcSave', 'atcReport', 'atcCopyReport','atcDeviceSearch','atcUserSearch','atcDeviceCount','atcUserCount'].includes(error&&error.atcElement)?error.atcElement:'none';
         return {Kind:kind,Status:httpStatus,Code:code,Frames:frames,Element:element};
     }
     function diagnostic(event, step, fields) {
-        const entry=Object.assign({Event:event,Step:step,Code:'none',Kind:'none',Sequence:++sequence,Status:0,DurationMs:0,Count:0,Schema:0,Frames:[],Element:'none'},fields||{});
+        const entry=Object.assign({Event:event,Step:step,Code:'none',Kind:'none',Sequence:++sequence,Status:'unknown',DurationMs:0,Count:0,Schema:0,Frames:[],Element:'none',RulePosition:0,RuleId:null,Field:'none',SelectedDevices:0,SelectedUsers:0,EnabledRules:0,AllDevices:false,AllUsers:false},fields||{});
         const line='[ATC:UI] '+JSON.stringify(Object.assign({UiVersion:uiVersion,UiSession:sessionId},entry));
         (event==='error'?console.error:console.info).call(console,line);
         records.push(line);if(records.length>100)records.shift();
@@ -126,7 +136,7 @@
         let client;try{client=apiClient();}catch(_){return;}
         forwarding=true;
         const batch=pending.splice(0,16);
-        try { await client.ajax({type:'POST',url:client.getUrl('AudioTranscodingControl/UiDiagnostics'),data:JSON.stringify({SessionId:sessionId,Events:batch}),contentType:'application/json'}); }
+        try { await client.ajax({type:'POST',url:client.getUrl('AudioTranscodingControl/UiDiagnostics'),data:JSON.stringify({SessionId:sessionId,Events:batch.map(e=>Object.assign({},e,{Status:typeof e.Status==='number'?e.Status:null}))}),contentType:'application/json'}); }
         catch(error){serverDiagnostics=false;console.warn('[ATC:UI] server diagnostics unavailable; status='+safeError(error).Status+'; local sanitized report retained');}
         finally{forwarding=false;if(pending.length&&serverDiagnostics&&!disposed)flushTimer=window.setTimeout(flush,750);}
     }
@@ -168,11 +178,22 @@
         result.Diagnostics.Level=level;
         return result;
     }
+    async function http(method,path,body) {
+        const client=apiClient();if(typeof client.accessToken!=='function')throw problem('api-unavailable');
+        const headers={Accept:'application/json'};const token=client.accessToken();
+        if(token)headers['X-Emby-Token']=token;
+        if(body!==undefined)headers['Content-Type']='application/json';
+        // Native authenticated API; only the parsed data and numeric status leave this transport helper.
+        const response=await fetch(client.getUrl(path),{method,headers,credentials:'same-origin',cache:'no-store',body:body===undefined?undefined:JSON.stringify(body)});
+        if(!response.ok){const error=problem('http-error');error.status=response.status;throw error;}
+        return {data:response.status===204?null:await response.json(),httpStatus:response.status};
+    }
     async function request(step, action) {
         const start=performance.now();diagnostic('api-start',step);
-        try { const result=await action();diagnostic('api-complete',step,{DurationMs:Math.min(3600000,Math.round(performance.now()-start))});return result; }
+        try { const result=await action();httpStatuses[step]=result.httpStatus;diagnostic('api-complete',step,{Status:result.httpStatus,DurationMs:Math.min(3600000,Math.round(performance.now()-start))});return result.data; }
         catch(error){diagnostic('error',step,Object.assign(safeError(error),{DurationMs:Math.min(3600000,Math.round(performance.now()-start))}));throw error;}
     }
+    function ruleCounts(rule,index) {return {RulePosition:index+1,RuleId:validGuid(rule.Id)?rule.Id:null,SelectedDevices:rule.DeviceIds.length,SelectedUsers:rule.UserIds.length,AllDevices:!!rule.AllDevices,AllUsers:!!rule.AllUsers};}
     function uuid() {
         const bytes = new Uint8Array(16); window.crypto.getRandomValues(bytes); bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
         const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -205,7 +226,7 @@
         const root=find('atcRules'); root.replaceChildren();
         if (!rules.length) { const p=document.createElement('p'); p.textContent=t('empty'); root.append(p); }
         rules.forEach((r,index)=>{
-            const card=document.createElement('div'); card.className='atc-card'; card.setAttribute('aria-current',String(index===selected));
+            const card=document.createElement('div'); card.className='atc-card'+(validationErrors.some(e=>e.index===index)?' atc-invalid':'');card.dataset.rulePosition=String(index); card.setAttribute('aria-current',String(index===selected));
             const title=document.createElement('div'); title.className='atc-card-title'; title.textContent=(index+1)+'. '+r.Name+' — '+t(r.IsEnabled?'active':'disabled'); card.append(title);
             const tools=document.createElement('div'); tools.className='atc-toolbar';
             tools.append(button(t('edit'),()=>{ selected=index; renderEditor(); renderRules(); }),
@@ -218,47 +239,93 @@
         find('atcAdd').disabled=!loaded||busy||rules.length>=64; warnings();
     }
     function move(index,delta) { const current=rules[selected];[rules[index],rules[index+delta]]=[rules[index+delta],rules[index]];selected=rules.indexOf(current);dirty=true;renderRules(); }
-    function picks(id, known, values, isUser) {
-        const select=find(id);select.replaceChildren(); const key=isUser?userKey:v=>v;const selectedKeys=new Set(values.map(key));const knownKeys=new Set(known.map(v=>key(v.id)));
-        known.forEach(v=>{const option=new Option(v.name,v.id);option.selected=selectedKeys.has(key(v.id));select.add(option);});
-        values.filter(v=>!knownKeys.has(key(v))).forEach(v=>{const option=new Option(t(isUser?'unknownUser':'unknownDevice')+' (…'+String(v).slice(-6)+')',v);option.selected=true;select.add(option);});
+    function filterPicks(id) {
+        const user=id==='atcUsers',query=find(user?'atcUserSearch':'atcDeviceSearch').value.toLocaleLowerCase().trim();
+        find(id).querySelectorAll('.atc-choice-row').forEach(row=>{row.hidden=!!query&&!row.dataset.search.includes(query);});
     }
+    function selectionState(id) {
+        const user=id==='atcUsers',rule=rules[selected];if(!rule)return;
+        const root=find(id),values=user?rule.UserIds:rule.DeviceIds,all=user?rule.AllUsers:rule.AllDevices;
+        root.querySelectorAll('input[type=checkbox]').forEach(input=>{input.disabled=!!all;input.closest('label').classList.toggle('atc-selected',input.checked);});
+        find(user?'atcUserCount':'atcDeviceCount').textContent=values.length+' '+t('selectedCount')+' / '+(user?users:devices).length+' '+t('availableCount')+(all?' — '+t('allActive'):'');
+        filterPicks(id);
+    }
+    function picks(id, known, values, isUser) {
+        const root=find(id);root.replaceChildren();const key=isUser?userKey:v=>v;
+        const selections=new Set(values.map(key));const entries=new Map(known.map(v=>[key(v.id),v]));
+        values.forEach(v=>{if(!entries.has(key(v)))entries.set(key(v),{id:v,name:t(isUser?'unknownUser':'unknownDevice'),missing:true});});
+        const items=Array.from(entries.values()).sort((a,b)=>Number(selections.has(key(b.id)))-Number(selections.has(key(a.id)))||a.name.localeCompare(b.name)||a.id.localeCompare(b.id));
+        if(!items.length){const empty=document.createElement('p');empty.textContent=t('selectionEmpty');root.append(empty);}
+        for(const item of items){
+            const row=document.createElement('label');row.className='atc-choice-row';
+            const input=document.createElement('input');input.type='checkbox';input.value=item.id;input.checked=selections.has(key(item.id));input.classList.add('atc-pick');
+            const text=document.createElement('span');text.className='atc-choice-text';const title=document.createElement('strong');title.textContent=item.name;text.append(title);
+            const details=[];if(item.client)details.push(item.client+(item.version?' '+item.version:''));
+            if(item.activity){const date=new Date(item.activity);if(!Number.isNaN(date.valueOf()))details.push(t('lastActivity')+': '+date.toLocaleString(language));}
+            details.push(t('reference')+': #'+(Array.from(entries.keys()).sort().indexOf(key(item.id))+1)+' · …'+item.id.slice(-6));if(item.missing)details.push(t(isUser?'unknownUser':'unknownDevice'));
+            const detail=document.createElement('span');detail.className='atc-choice-detail';detail.textContent=details.join(' · ');text.append(detail);
+            row.dataset.search=(item.name+' '+details.join(' ')).toLocaleLowerCase();row.append(input,text);root.append(row);
+        }
+        selectionState(id);
+    }
+    function selectedValues(id) {return Array.from(find(id).querySelectorAll('input[type=checkbox]:checked'),input=>input.value);}
     function renderEditor() {
         const rule=rules[selected];find('atcEditor').hidden=!rule;if(!rule)return;
         find('atcName').value=rule.Name;find('atcEnabled').checked=rule.IsEnabled;
         find('atcAllDevices').checked=rule.AllDevices;find('atcAllUsers').checked=rule.AllUsers;
         picks('atcDevices',devices,rule.DeviceIds,false);picks('atcUsers',users,rule.UserIds,true);
-        find('atcDevices').disabled=rule.AllDevices;find('atcUsers').disabled=rule.AllUsers;
+        selectionState('atcDevices');selectionState('atcUsers');
         find('atcCodec').value=rule.TargetCodec;find('atcChannels').value=String(rule.MaxAudioChannels);find('atcBitrate').value=String(rule.MaxAudioBitrate);
         find('atcPreserve').checked=rule.PreserveCompatibleAudio;find('atcStereo').checked=rule.PreserveStereo;find('atcRuleDiagnostics').checked=rule.EnableDiagnostics;
+        if(validationAttempted)renderValidation(validate(),false);
     }
     function collectEditor() {
         const r=rules[selected];if(!loaded||busy||!r)return;
         Object.assign(r,{Name:find('atcName').value,IsEnabled:find('atcEnabled').checked,AllDevices:find('atcAllDevices').checked,AllUsers:find('atcAllUsers').checked,
-            DeviceIds:Array.from(find('atcDevices').selectedOptions,o=>o.value),UserIds:Array.from(find('atcUsers').selectedOptions,o=>o.value),TargetCodec:find('atcCodec').value,
+            DeviceIds:selectedValues('atcDevices'),UserIds:selectedValues('atcUsers'),TargetCodec:find('atcCodec').value,
             MaxAudioChannels:Number(find('atcChannels').value),MaxAudioBitrate:Number(find('atcBitrate').value),PreserveCompatibleAudio:find('atcPreserve').checked,PreserveStereo:find('atcStereo').checked,EnableDiagnostics:find('atcRuleDiagnostics').checked});
-        find('atcDevices').disabled=r.AllDevices;find('atcUsers').disabled=r.AllUsers;dirty=true;renderRules();
+        selectionState('atcDevices');selectionState('atcUsers');dirty=true;renderRules();if(validationAttempted)renderValidation(validate(),false);
     }
     function validate() {
-        if(rules.length>64) return t('tooMany');const ids=new Set();
-        for(const r of rules){
-            if(!validGuid(r.Id)||ids.has(userKey(r.Id))||!r.Name.trim()||r.Name.length>80||r.TargetCodec!=='ac3'||![1,2,6].includes(r.MaxAudioChannels)||!bitrates.includes(r.MaxAudioBitrate)
-                ||r.DeviceIds.length>256||r.UserIds.length>256||r.DeviceIds.some(v=>!v.trim()||v.length>512||/[\x00-\x1f]/.test(v))||r.UserIds.some(v=>!validGuid(v))) return t('invalid');
-            ids.add(userKey(r.Id));if(r.IsEnabled&&!nonempty(r))return t('emptyRule');
-        }
-        return null;
+        const errors=[],ids=new Set();const add=(index,field,code)=>errors.push({index,field,code});
+        if(rules.length>64)add(-1,'Rules','rules-too-many');
+        rules.forEach((r,index)=>{
+            if(!validGuid(r.Id))add(index,'Id','rule-id-missing');else if(ids.has(userKey(r.Id)))add(index,'Id','rule-id-duplicate');ids.add(userKey(r.Id));
+            if(!r.Name.trim())add(index,'Name','rule-name-required');else if(r.Name.length>80)add(index,'Name','rule-name-too-long');
+            if(r.TargetCodec!=='ac3')add(index,'TargetCodec','target-codec-unsupported');
+            if(![1,2,6].includes(r.MaxAudioChannels))add(index,'MaxAudioChannels','audio-channels-invalid');
+            if(!bitrates.includes(r.MaxAudioBitrate))add(index,'MaxAudioBitrate','audio-bitrate-invalid');
+            if(r.DeviceIds.length>256)add(index,'DeviceIds','devices-too-many');
+            if(r.UserIds.length>256)add(index,'UserIds','users-too-many');
+            if(r.DeviceIds.some(v=>!v.trim()||v.length>512||/[\x00-\x1f]/.test(v)))add(index,'DeviceIds','device-id-invalid');
+            if(r.UserIds.some(v=>!validGuid(v)))add(index,'UserIds','user-id-invalid');
+            if(r.IsEnabled&&!r.AllDevices&&!r.DeviceIds.length)add(index,'DeviceIds','device-selection-required');
+            if(r.IsEnabled&&!r.AllUsers&&!r.UserIds.length)add(index,'UserIds','user-selection-required');
+        });
+        if(!['Trace','Debug','Information','Warning','Error'].includes(find('atcLogLevel').value))add(-1,'Diagnostics.Level','logging-level-invalid');
+        return errors;
     }
-
+    function renderValidation(errors,focus) {
+        validationErrors=errors;
+        page.querySelectorAll('.atc-field-error').forEach(e=>e.remove());page.querySelectorAll('[aria-invalid=true]').forEach(e=>{e.removeAttribute('aria-invalid');e.removeAttribute('aria-describedby');e.classList.remove('atc-invalid');});
+        page.querySelectorAll('.atc-card').forEach(card=>card.classList.toggle('atc-invalid',errors.some(e=>e.index===Number(card.dataset.rulePosition))));
+        if(focus&&errors[0]&&errors[0].index>=0&&selected!==errors[0].index){selected=errors[0].index;renderEditor();renderRules();return renderValidation(errors,focus);}
+        const fields={Id:'atcName',Name:'atcName',TargetCodec:'atcCodec',MaxAudioChannels:'atcChannels',MaxAudioBitrate:'atcBitrate',DeviceIds:'atcDevices',UserIds:'atcUsers','Diagnostics.Level':'atcLogLevel',Rules:'atcAdd'};
+        const grouped=new Map();for(const error of errors.filter(e=>e.index===selected||e.index===-1)){const id=fields[error.field];if(!grouped.has(id))grouped.set(id,[]);grouped.get(id).push(t(error.code));}
+        for(const [id,messages] of grouped){const element=find(id),note=document.createElement('p');note.className='atc-field-error';note.id=id+'Error';note.setAttribute('role','alert');note.textContent=messages.join(' ');element.setAttribute('aria-invalid','true');element.setAttribute('aria-describedby',note.id);element.classList.add('atc-invalid');element.insertAdjacentElement('afterend',note);}
+        if(focus&&errors.length){const first=find(fields[errors[0].field]);first.focus();first.scrollIntoView({block:'nearest'});}
+    }
     async function load(cause) {
         if(busy){diagnostic('duplicate-initialization-suppressed','interface',{Code:'duplicate'});return;}
+        const activeRuleId=rules[selected]&&rules[selected].Id;
         const ticket=++generation;busy=true;loaded=false;availability();showStatus('loading');
         diagnostic('initialization-start','interface',{Code:cause});
         try {
             const client=apiClient();diagnostic('api-available','interface');
             const result=await Promise.allSettled([
-                request('configuration',()=>client.getPluginConfiguration(pluginId)),
-                request('devices',()=>client.ajax({type:'GET',url:client.getUrl('Devices'),dataType:'json'})),
-                request('users',()=>client.getUsers())
+                request('configuration',()=>http('GET','Plugins/'+pluginId+'/Configuration')),
+                request('devices',()=>http('GET','Devices')),
+                request('users',()=>http('GET','Users'))
             ]);
             if(ticket!==generation||disposed){diagnostic('initialization-aborted','interface',{Code:'hidden'});return;}
             const steps=['configuration','devices','users'];
@@ -270,36 +337,36 @@
             try {
                 const data=result[1].value;
                 if(!data||!Array.isArray(data.Items))throw problem('invalid-response');
-                const deviceMap=new Map();data.Items.forEach(d=>{if(d&&typeof d.Id==='string')deviceMap.set(d.Id,{id:d.Id,name:(d.CustomName||d.Name||t('devices'))+' — '+(d.AppName||'')+' '+(d.AppVersion||'')});});
+                const deviceMap=new Map();data.Items.forEach(d=>{if(d&&typeof d.Id==='string')deviceMap.set(d.Id,{id:d.Id,name:d.CustomName||d.Name||t('devices'),client:d.AppName||'',version:d.AppVersion||'',activity:d.DateLastActivity||null});});
                 nextDevices=Array.from(deviceMap.values());diagnostic('rendered','devices',{Count:nextDevices.length});
             } catch(error){fail('devices',error);return;}
             try {
                 const data=result[2].value;
                 if(!Array.isArray(data))throw problem('invalid-response');
-                nextUsers=data.filter(u=>u&&validGuid(u.Id)).map(u=>({id:u.Id,name:u.Name||t('users')}));diagnostic('rendered','users',{Count:nextUsers.length});
+                nextUsers=data.filter(u=>u&&validGuid(u.Id)).map(u=>({id:u.Id,name:u.Name||t('users'),activity:u.LastActivityDate||null}));diagnostic('rendered','users',{Count:nextUsers.length});
             } catch(error){fail('users',error);return;}
             config=nextConfig;devices=nextDevices;users=nextUsers;rules=config.Rules;
             language=config.UiLanguage==='de'?'de':'en';find('atcLanguage').value=language;localize();
             find('atcMaster').checked=!!config.IsEnabled;const log=config.Diagnostics;
             find('atcLogLevel').value=log.Level;find('atcLogMatching').checked=!!log.DetailedRuleMatching;find('atcLogProfiles').checked=!!log.DeviceProfileChanges;find('atcLogResponse').checked=!!log.PlaybackResponseAnalysis;find('atcLogPerformance').checked=!!log.PerformanceMeasurements;
-            selected=rules.length?0:-1;loaded=true;dirty=false;renderEditor();renderRules();showStatus('ready');
+            selected=rules.length?Math.max(0,rules.findIndex(rule=>userKey(rule.Id)===userKey(activeRuleId))):-1;loaded=true;dirty=false;validationAttempted=false;renderValidation([],false);rules.forEach((rule,index)=>diagnostic('selection-restored','configuration',ruleCounts(rule,index)));renderEditor();renderRules();showStatus('ready');
             diagnostic('rendered','interface',{Count:rules.length,Schema:2});diagnostic('initialization-complete','interface',{Code:'ready',Schema:2});
         } catch(error){if(ticket===generation&&!disposed)fail('interface',error);}
         finally{if(ticket===generation&&!disposed){busy=false;availability();}}
     }
     async function save(event) {
         event.preventDefault();if(!loaded||busy)return;collectEditor();diagnostic('validation','save');
-        const error=validate();if(error){status(error);diagnostic('validation','save',{Code:'invalid'});return;}
+        validationAttempted=true;const errors=validate();renderValidation(errors,true);if(errors.length){status(t('validationSummary')+' '+errors.map(e=>(e.index>=0?t('ruleLabel')+' '+(e.index+1)+': ':'')+t(e.code)).join(' '));errors.forEach(e=>diagnostic('validation','save',Object.assign({Code:e.code,Field:e.field},e.index>=0?ruleCounts(rules[e.index],e.index):{})));return;}
         const edited=JSON.parse(JSON.stringify(rules));
         const master=find('atcMaster').checked,selectedLanguage=language;
         const diagnostics={Level:find('atcLogLevel').value,DetailedRuleMatching:find('atcLogMatching').checked,DeviceProfileChanges:find('atcLogProfiles').checked,PlaybackResponseAnalysis:find('atcLogResponse').checked,PerformanceMeasurements:find('atcLogPerformance').checked};
         busy=true;availability();showStatus('saving');
         let step='save-configuration';
         try {
-            const client=apiClient();const current=normalize(await request(step,()=>client.getPluginConfiguration(pluginId)));
+            const client=apiClient();const current=normalize(await request(step,()=>http('GET','Plugins/'+pluginId+'/Configuration')));
             current.IsEnabled=master;current.Rules=edited;current.SchemaVersion=2;current.UiLanguage=selectedLanguage;current.Diagnostics=diagnostics;
-            step='save';await request(step,()=>client.updatePluginConfiguration(pluginId,current));
-            config=current;dirty=false;showStatus('saved');diagnostic('save-complete','save',{Code:'saved',Count:rules.length,Schema:2});
+            step='save';await request(step,()=>http('POST','Plugins/'+pluginId+'/Configuration',current));
+            config=current;dirty=false;showStatus('saved');diagnostic('save-complete','save',{Code:'saved',Count:rules.length,EnabledRules:rules.filter(r=>r.IsEnabled).length,Schema:2,Status:httpStatuses.save||'unknown'});rules.forEach((rule,index)=>diagnostic('selection-saved','save',ruleCounts(rule,index)));
         } catch(error){const safe=safeError(error);showStatus('saveError',[{key:'saveError',status:safe.Status,code:safe.Code}]);diagnostic('error',step,safe);}
         finally{busy=false;availability();}
     }
@@ -321,8 +388,8 @@
         listen(page,'pagedestroy',dispose);
         find('atcBitrate').replaceChildren();
         bitrates.forEach(rate=>find('atcBitrate').add(new Option(String(rate),String(rate))));
-        listen(find('atcEditor'),'input',collectEditor);
-        listen(find('atcEditor'),'change',()=>{collectEditor();diagnostic('changed','rule',{Code:'change',Count:rules.length});});
+        listen(find('atcEditor'),'input',event=>{if(event.target.id==='atcDeviceSearch'||event.target.id==='atcUserSearch'){filterPicks(event.target.id==='atcDeviceSearch'?'atcDevices':'atcUsers');return;}collectEditor();});
+        listen(find('atcEditor'),'change',event=>{if(event.target.type==='search'){diagnostic('control','rule',{Code:'filter'});return;}collectEditor();if(rules[selected])diagnostic('changed','rule',Object.assign({Code:'change',Count:rules.length},ruleCounts(rules[selected],selected)));});
         for(const id of ['atcMaster','atcLogLevel','atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])listen(find(id),'change',()=>{if(!loaded||busy)return;dirty=true;diagnostic('changed','settings',{Code:id==='atcMaster'?'master':'logging'});});
         listen(find('atcAdd'),'click',()=>{if(!loaded||busy||rules.length>=64)return;rules.push(newRule());selected=rules.length-1;dirty=true;renderEditor();renderRules();diagnostic('changed','rule',{Code:'add',Count:rules.length});find('atcName').focus();});
         listen(find('atcDebugPreset'),'click',()=>{if(!loaded||busy)return;find('atcLogLevel').value='Debug';for(const id of ['atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])find(id).checked=true;dirty=true;diagnostic('changed','settings',{Code:'debug-preset'});});

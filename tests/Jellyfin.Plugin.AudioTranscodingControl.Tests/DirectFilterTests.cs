@@ -71,7 +71,7 @@ public sealed class DirectFilterTests
     }
 
     [Fact]
-    public async Task UnsupportedDtoAndMissingSourceRemainUntouched()
+    public async Task UnsupportedDtoRemainsUntouchedAndSingleSourceCanBeImplicit()
     {
         var fixture = new HostFixture();
         var synthetic = new ProbeRequest { DeviceProfile = HostFixture.Profile() };
@@ -80,7 +80,7 @@ public sealed class DirectFilterTests
         var request = PlaybackInfoIntegrationTests.Request(fixture); request.MediaSourceId = null;
         var original = request.DeviceProfile;
         await Run(fixture, request, new());
-        Assert.Same(original, request.DeviceProfile);
+        Assert.NotSame(original, request.DeviceProfile);
     }
 
     [Fact]

@@ -13,12 +13,13 @@ namespace Jellyfin.Plugin.AudioTranscodingControl.Controllers;
 [Route("AudioTranscodingControl/UiDiagnostics")]
 public sealed class UiDiagnosticsController(ILogger<UiDiagnosticsController> logger) : ControllerBase
 {
-    private static readonly HashSet<string> Events = ["script-start", "handlers-registered", "handlers-removed", "page-show", "page-hide", "api-available", "api-start", "api-complete", "error", "configuration-processed", "rendered", "control", "changed", "validation", "save-complete", "reload", "initialization-start", "initialization-complete", "initialization-aborted", "duplicate-initialization-suppressed"];
+    private static readonly HashSet<string> Events = ["script-start", "handlers-registered", "handlers-removed", "page-show", "page-hide", "api-available", "api-start", "api-complete", "error", "configuration-processed", "rendered", "control", "changed", "validation", "save-complete", "reload", "initialization-start", "initialization-complete", "initialization-aborted", "duplicate-initialization-suppressed", "selection-restored", "selection-saved"];
     private static readonly HashSet<string> Steps = ["interface", "configuration", "devices", "users", "save", "save-configuration", "rule", "settings", "lifecycle", "diagnostics"];
-    private static readonly HashSet<string> Codes = ["none", "script", "pageshow", "reload", "hidden", "disposed", "duplicate", "api-unavailable", "missing-element", "invalid-schema", "invalid-configuration", "invalid-response", "invalid-log-level", "http-error", "network-error", "javascript-error", "invalid", "ready", "loading", "saved", "add", "edit", "duplicate-rule", "delete", "enable", "disable", "move-up", "move-down", "rule-action", "master", "logging", "language", "debug-preset", "copy-report", "save", "input", "change", "empty-selection", "unsaved-retained"];
+    private static readonly HashSet<string> Codes = ["none", "script", "pageshow", "reload", "hidden", "disposed", "duplicate", "api-unavailable", "missing-element", "invalid-schema", "invalid-configuration", "invalid-response", "invalid-log-level", "http-error", "network-error", "javascript-error", "invalid", "ready", "loading", "saved", "add", "edit", "duplicate-rule", "delete", "enable", "disable", "move-up", "move-down", "rule-action", "master", "logging", "language", "debug-preset", "copy-report", "save", "input", "change", "empty-selection", "unsaved-retained", "rule-id-missing", "rule-id-duplicate", "rule-name-required", "rule-name-too-long", "target-codec-unsupported", "audio-channels-invalid", "audio-bitrate-invalid", "devices-too-many", "users-too-many", "device-id-invalid", "user-id-invalid", "device-selection-required", "user-selection-required", "rules-too-many", "logging-level-invalid", "filter"];
+    private static readonly HashSet<string> Fields = ["none", "Id", "Name", "DeviceIds", "UserIds", "TargetCodec", "MaxAudioChannels", "MaxAudioBitrate", "Rules", "Diagnostics.Level"];
     private static readonly HashSet<string> Kinds = ["none", "Error", "TypeError", "ReferenceError", "SyntaxError", "RangeError", "AbortError", "NetworkError"];
     private static readonly HashSet<string> FrameNames = ["initialize", "load", "request", "save", "normalize", "renderRules", "renderEditor", "collectEditor", "validate", "find", "apiClient", "listen", "external"];
-    private static readonly HashSet<string> Elements = ["none", "ATCForm", "atcLanguage", "atcMaster", "atcStatus", "atcAdd", "atcReload", "atcRules", "atcWarnings", "atcEditor", "atcName", "atcEnabled", "atcAllDevices", "atcAllUsers", "atcDevices", "atcUsers", "atcCodec", "atcChannels", "atcBitrate", "atcPreserve", "atcStereo", "atcRuleDiagnostics", "atcLogging", "atcLogLevel", "atcLogMatching", "atcLogProfiles", "atcLogResponse", "atcLogPerformance", "atcDebugPreset", "atcSave", "atcReport", "atcCopyReport"];
+    private static readonly HashSet<string> Elements = ["none", "ATCForm", "atcLanguage", "atcMaster", "atcStatus", "atcAdd", "atcReload", "atcRules", "atcWarnings", "atcEditor", "atcName", "atcEnabled", "atcAllDevices", "atcAllUsers", "atcDevices", "atcUsers", "atcCodec", "atcChannels", "atcBitrate", "atcPreserve", "atcStereo", "atcRuleDiagnostics", "atcLogging", "atcLogLevel", "atcLogMatching", "atcLogProfiles", "atcLogResponse", "atcLogPerformance", "atcDebugPreset", "atcSave", "atcReport", "atcCopyReport", "atcDeviceSearch", "atcUserSearch", "atcDeviceCount", "atcUserCount"];
 
     /// <summary>Writes only validated scalar codes; arbitrary client messages, payloads and URLs are never logged.</summary>
     /// <param name="batch">A bounded diagnostic batch.</param>
@@ -29,7 +30,9 @@ public sealed class UiDiagnosticsController(ILogger<UiDiagnosticsController> log
     {
         if (batch.SessionId == Guid.Empty || batch.Events is null || batch.Events.Length is < 1 or > 32
             || batch.Events.Any(e => e is null || !Events.Contains(e.Event) || !Steps.Contains(e.Step) || !Codes.Contains(e.Code)
-                || !Kinds.Contains(e.Kind) || !Elements.Contains(e.Element) || e.Sequence is < 1 or > 1000000 || e.Status is < 0 or > 599
+                || !Kinds.Contains(e.Kind) || !Elements.Contains(e.Element) || e.Sequence is < 1 or > 1000000 || e.Status is < 100 or > 599
+                || !Fields.Contains(e.Field) || e.RulePosition is < 0 or > 64 || e.EnabledRules is < 0 or > 64
+                || e.SelectedDevices is < 0 or > 100000 || e.SelectedUsers is < 0 or > 100000
                 || e.DurationMs is < 0 or > 3600000 || e.Count is < 0 or > 100000 || e.Schema is < 0 or > 1000
                 || e.Frames is null || e.Frames.Length > 6 || e.Frames.Any(f => !ValidFrame(f))))
             return BadRequest();
@@ -38,8 +41,8 @@ public sealed class UiDiagnosticsController(ILogger<UiDiagnosticsController> log
         var diagnostics = new PluginDiagnostics(logger, new() { Level = "Information" }, batch.SessionId.ToString("N"));
         foreach (var entry in batch.Events)
             diagnostics.Write(entry.Event == "error" ? LogLevel.Warning : LogLevel.Information, entry.Event == "error" ? 3101 : 3100,
-                "[ATC:UI] event={UiEvent}; step={Step}; code={Code}; sequence={Sequence}; status={HttpStatus}; durationMs={DurationMs}; count={Count}; schema={Schema}; uiVersion=0.2.1.0; errorKind={ErrorKind}; missingElement={MissingElement}; safeStack={SafeStack}",
-                entry.Event, entry.Step, entry.Code, entry.Sequence, entry.Status, entry.DurationMs, entry.Count, entry.Schema, entry.Kind, entry.Element, string.Join(" <- ", entry.Frames));
+                "[ATC:UI] event={UiEvent}; step={Step}; code={Code}; sequence={Sequence}; status={HttpStatus}; durationMs={DurationMs}; count={Count}; schema={Schema}; uiVersion=0.2.2.0; rulePosition={RulePosition}; ruleId={RuleId}; field={Field}; selectedDevices={SelectedDevices}; selectedUsers={SelectedUsers}; enabledRules={EnabledRules}; allDevices={AllDevices}; allUsers={AllUsers}; errorKind={ErrorKind}; missingElement={MissingElement}; safeStack={SafeStack}",
+                entry.Event, entry.Step, entry.Code, entry.Sequence, entry.Status.HasValue ? (object)entry.Status.Value : "unknown", entry.DurationMs, entry.Count, entry.Schema, entry.RulePosition, entry.RuleId, entry.Field, entry.SelectedDevices, entry.SelectedUsers, entry.EnabledRules, entry.AllDevices, entry.AllUsers, entry.Kind, entry.Element, string.Join(" <- ", entry.Frames));
         return NoContent();
     }
 
@@ -77,8 +80,24 @@ public sealed class UiDiagnosticEvent
     public string Element { get; set; } = "none";
     /// <summary>Gets or sets the page sequence.</summary>
     public int Sequence { get; set; }
-    /// <summary>Gets or sets a status, or zero when unavailable.</summary>
-    public int Status { get; set; }
+    /// <summary>Gets or sets a status, or null when unavailable.</summary>
+    public int? Status { get; set; }
+    /// <summary>Gets or sets a one-based rule position, or zero outside rule events.</summary>
+    public int RulePosition { get; set; }
+    /// <summary>Gets or sets an internal rule UUID, never a device or user identity.</summary>
+    public Guid? RuleId { get; set; }
+    /// <summary>Gets or sets an allowlisted configuration field.</summary>
+    public string Field { get; set; } = "none";
+    /// <summary>Gets or sets the selected device count without identities.</summary>
+    public int SelectedDevices { get; set; }
+    /// <summary>Gets or sets the selected user count without identities.</summary>
+    public int SelectedUsers { get; set; }
+    /// <summary>Gets or sets the enabled rule count.</summary>
+    public int EnabledRules { get; set; }
+    /// <summary>Gets or sets whether explicit all-devices selection is enabled.</summary>
+    public bool AllDevices { get; set; }
+    /// <summary>Gets or sets whether explicit all-users selection is enabled.</summary>
+    public bool AllUsers { get; set; }
     /// <summary>Gets or sets the elapsed request time.</summary>
     public int DurationMs { get; set; }
     /// <summary>Gets or sets a scalar item count.</summary>

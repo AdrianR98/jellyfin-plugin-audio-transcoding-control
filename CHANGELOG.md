@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2 — M2.2, real-device path compatibility pre-release
+
+- Fix the video-source flag/audio-permission mismatch; resolve omitted source IDs only for a unique native source and distinguish source/track/profile reasons at Debug.
+- Support offered HTTP MKV AC3 profiles and a bounded negotiated progressive-MKV audio hook for the native video-transcoding-denied fallback. Recheck rule/session/source/track/permissions; no global AAC replacement or video argument changes.
+- Preserve compatible AC3 copy only within native remux/copy permission; support seven-channel source metadata for AC3 downmix and retain stereo preservation.
+- Replace multiselects with searchable checkbox lists, counts/highlighting, client/version/activity details and retained unavailable selections.
+- Add inline field errors, specific reasons, internal rule position/ID and selection counts. Capture actual HTTP status or explicit unknown, and saved/active rule totals.
+- Native isolated MKV proof: HEVC copy, AC3 six-channel/640000 output, generated progressive URL, unmatched/unnegotiated AAC controls and permitted AC3 copy. Synthetic TrueHD input was six-channel; eight-channel TrueHD and seven-channel DTS use focused fixtures.
+- Preserve schema 2/GUID/earlier releases. No production changes, new dependencies or CI.
+
 ## 0.2.1 — M2.1, dashboard hotfix pre-release
 
 - Fix actual Jellyfin Web 10.11.11 incompatibility: the global legacy ApiClient has no getDevices method; use its authenticated ajax/getUrl transport for GET /Devices.
