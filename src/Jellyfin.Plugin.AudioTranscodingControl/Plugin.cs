@@ -43,7 +43,15 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override string Description => "Experimental ordered AC3 policies with native dashboard configuration and sanitized diagnostics.";
 
     /// <inheritdoc />
-    public IEnumerable<PluginPageInfo> GetPages() => [new() { Name = "audiotranscodingcontrol", EmbeddedResourcePath = "Jellyfin.Plugin.AudioTranscodingControl.Configuration.configPage.html" }];
+    public IEnumerable<PluginPageInfo> GetPages() => [new()
+    {
+        Name = "audiotranscodingcontrol",
+        DisplayName = "Audio Transcoding Control",
+        EnableInMainMenu = true,
+        MenuSection = "server",
+        MenuIcon = "graphic_eq",
+        EmbeddedResourcePath = "Jellyfin.Plugin.AudioTranscodingControl.Configuration.configPage.html",
+    }];
 
     internal PluginConfiguration GetConfigurationSnapshot()
     {

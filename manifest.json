@@ -8,6 +8,14 @@
     "owner": "AdrianR98",
     "versions": [
       {
+        "version": "0.2.1.0",
+        "changelog": "Dashboard hotfix: fix native Jellyfin Web 10.11.11 device loading; recoverable initialization, direct Plugins sidebar entry, localized errors and sanitized frontend/server diagnostics. Schema 2 and playback policies unchanged.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/download/v0.2.1/Jellyfin.Plugin.AudioTranscodingControl-0.2.1.zip",
+        "checksum": "edb2f825f70a2b41c2bc7ec5129a906c",
+        "timestamp": "2026-11-27T10:34:43Z"
+      },
+      {
         "version": "0.2.0.0",
         "changelog": "Ordered multi-device/user AC3 rules, lossless legacy migration, native English/German configuration and structured diagnostics. Experimental; real-device playback and native update validation remain pending.",
         "targetAbi": "10.11.11.0",

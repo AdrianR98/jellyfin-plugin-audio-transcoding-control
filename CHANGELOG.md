@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — M2.1, dashboard hotfix pre-release
+
+- Fix actual Jellyfin Web 10.11.11 incompatibility: the global legacy ApiClient has no getDevices method; use its authenticated ajax/getUrl transport for GET /Devices.
+- Recoverable, step-specific initialization with independent handlers, stale-request guards, visible disabled states and Reload after failure. Preserve schema 2 configurations and rules.
+- Add the native Audio Transcoding Control dashboard entry under Plugins using PluginPageInfo.
+- Add early [ATC:UI] console/report diagnostics and a bounded native administrator-only logging bridge, with controlled codes and sanitized method frames rather than raw messages, HTTP payloads or identifiers.
+- Verify native Web 10.11.11 initialization, rule controls, selections, save/reload, sidebar navigation, reopen, copy report and injected request failures on a disposable local server. Existing tests retained; one focused endpoint validation check added.
+- No production server changes, dependency additions or CI/browser framework.
+
 ## 0.2.0 — M2, experimental pre-release
 
 - Ordered independent AC3 rules with device/user multiselection, explicit All options, first-match priority and safe identity validation.
