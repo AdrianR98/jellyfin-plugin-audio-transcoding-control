@@ -1,12 +1,12 @@
 # Project context
 
 - Jellyfin Audio Transcoding Control, namespace `Jellyfin.Plugin.AudioTranscodingControl`, GPL-3.0-only. Keep template attribution and THIRD-PARTY-NOTICES.md.
-- Current milestone M2 / version 0.2.0.0. Read README.md and docs/m2.md for current behavior. Historical M1 evidence: docs/m1-verification.md. Pinned sources: docs/source-lock.json.
+- Current milestone M2.1 / version 0.2.1.0. Read docs/m2.1.md for dashboard evidence and UI diagnostics. Read README.md and docs/m2.md for current behavior. Historical M1 evidence: docs/m1-verification.md. Pinned sources: docs/source-lock.json.
 - Jellyfin 10.11.11 / net9.0, SDK 9.0.201. Real Jellyfin.Api reference from verified ignored .local/server; no host/test DLLs in release output. Native API assembly version differs from server version; exact source/host checks are intentional.
 - Ordered AND/OR explicit-scope rules; first enabled match wins, no later fallback or implicit All. New installs disabled. Preserve migration selections and activation. Unknown identities/schema/profiles must safely bypass.
 - Keep native PlaybackInfo POST action filter and request-local deep copying. Do not loosen user/video/subtitle restrictions. Native next() exactly once; never swallow controller errors. No Core/client/FFmpeg patching.
 - Diagnostics use native ILogger and safe structured fields only. Never log tokens, URLs, raw device/user IDs, media paths, full DTOs or exception messages. Do not change global logging files. Read docs/m2.md for the labeled Information fallback for Debug/Trace.
-- User authorized the public v0.2.0 pre-release/catalog update and reconciliation of PR #1; preserve published 0.1 tag/asset/catalog entry. No Actions/CI or new browser framework. Retain existing tests and add only focused risk checks. User performs real native update/dashboard/hardware tests.
+- User authorized the public v0.2.1 hotfix pre-release/catalog update; preserve published 0.1 tag/asset/catalog entry. No Actions/CI or new browser framework. Retain existing tests and add only focused risk checks. Native UI hotfix was checked on a disposable loopback server; user performs production update and hardware tests.
 - Do not install, configure or restart the production Jellyfin server. Private configuration/logs and generated artifacts stay ignored under .local/ or work/.
 
 ```powershell
