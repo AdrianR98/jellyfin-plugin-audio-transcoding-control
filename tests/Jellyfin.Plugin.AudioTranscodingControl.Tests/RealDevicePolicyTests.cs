@@ -155,6 +155,28 @@ public sealed class RealDevicePolicyTests
     }
 
     [Fact]
+    public async Task CompatibleAc3MultiTrackDirectPlaybackRetainsContextForSubsequentTrackChange()
+    {
+        var fixture = new HostFixture("ac3", 6);
+        fixture.User.SetPermission(PermissionKind.EnableVideoPlaybackTranscoding, false);
+        fixture.User.SetPermission(PermissionKind.EnablePlaybackRemuxing, false);
+        fixture.Source.SupportsTranscoding = false; fixture.Source.SupportsDirectStream = false;
+        fixture.Source.MediaStreams = [..fixture.Source.MediaStreams,
+            new() { Index = 2, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "truehd", Channels = 8, BitRate = 4000000 }];
+        using var server = PlaybackInfoIntegrationTests.CreateServer(fixture);
+        var request = PlaybackInfoIntegrationTests.Request(fixture);
+        var profile = JsonSerializer.Serialize(request.DeviceProfile);
+        var response = await PlaybackInfoIntegrationTests.Playback(server, fixture, request);
+        Assert.True(Assert.Single(response.MediaSources).SupportsDirectPlay);
+        Assert.Equal(profile, JsonSerializer.Serialize(request.DeviceProfile));
+        using var scope = server.Services.CreateScope();
+        var args = new Dictionary<string, object?> { ["itemId"] = fixture.Video.Id, ["container"] = "mkv", ["mediaSourceId"] = fixture.Source.Id,
+            ["playSessionId"] = response.PlaySessionId, ["audioStreamIndex"] = 2, ["audioCodec"] = "aac", ["audioBitRate"] = 768000,
+            ["audioChannels"] = 6, ["videoCodec"] = "hevc", ["allowVideoStreamCopy"] = true };
+        await Run(scope.ServiceProvider, fixture, args); Assert.Equal("ac3", args["audioCodec"]);
+    }
+
+    [Fact]
     public async Task CredentialAssociationAllowsTokenRecordIdentityAndMutableTracksButRejectsUnrelatedCallers()
     {
         var fixture = new HostFixture("ac3", 6) { TokenDevice = "registered-at-login", ClaimDevice = "negotiating-device" };
