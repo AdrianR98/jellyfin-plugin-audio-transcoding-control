@@ -1,6 +1,6 @@
 # Jellyfin Audio Transcoding Control
 
-Experimental server plugin for **Jellyfin 10.11.11 / .NET 9**, version **0.2.4.0**. Ordered device/user rules narrow eligible native playback audio to AC3, with configurable channel and bitrate ceilings. New installations are disabled by default.
+Experimental server plugin for **Jellyfin 10.11.11 / .NET 9**, version **0.2.5.0**. Ordered device/user rules narrow eligible native playback audio to AC3, with configurable channel and bitrate ceilings. New installations are disabled by default.
 
 ## Install or update from the plugin catalog
 
@@ -10,17 +10,19 @@ Experimental server plugin for **Jellyfin 10.11.11 / .NET 9**, version **0.2.4.0
    https://raw.githubusercontent.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/main/manifest.json
    ```
 
-2. Refresh the catalog, select **Jellyfin Audio Transcoding Control**, and install **0.2.4.0**. For an existing installation, use Jellyfin's regular plugin update mechanism.
+2. Refresh the catalog, select **Jellyfin Audio Transcoding Control**, and install **0.2.5.0**. For an existing installation, use Jellyfin's regular plugin update mechanism.
 3. Restart Jellyfin yourself when prompted. Open the plugin's configuration page in Dashboard → Plugins.
 4. Keep the master switch off while selecting the intended devices and users. Enable the rule and master switch, then save. Configuration and logging changes apply to the next PlaybackInfo request without another restart.
 
-[Source repository](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control) · [Pre-release and ZIP](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/tag/v0.2.4) · [Changelog](CHANGELOG.md)
+[Source repository](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control) · [Pre-release and ZIP](https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/tag/v0.2.5) · [Changelog](CHANGELOG.md)
 
 ## Configure
 
 Open **Audio Transcoding Control** directly under **Plugins** in the dashboard sidebar, or through the installed plugin details. Both open the same page. The native English/German dashboard page supports creating, editing, duplicating, deleting, enabling and reordering rules. Device and user lists come from authenticated Jellyfin APIs. Unavailable saved selections remain visible and selected until explicitly removed. They never become “All”. Duplicate rules start disabled.
 
 The dashboard separates **Audio rules** and **Diagnostics**, with responsive rule cards, summaries, switches and collapsible editors. Searchable checkbox lists replace Ctrl-based multiselection. Counts/highlighting, full wrapping names, client/version/activity details and distinct local reference labels show what is selected. Filtering retains hidden selections. Validation highlights fields with specific inline guidance; diagnostics identify the internal rule/position and selection counts without logging raw device/user identifiers.
+
+Rule cards start collapsed. Open a card to edit it in place; only one editor is open at a time. Closing or switching cards preserves unsaved changes. Rule actions use stable IDs, and deletion asks for native confirmation. Disabled drafts may be saved without device/user selections; activation requires selections or explicit All scopes. All deletions require Save configuration to persist. See [M2.5 findings](docs/m2.5.md).
 
 Device registrations are grouped by display name/client only. Newest registrations appear first; older ones collapse. A 90-day activity filter defaults on, with other windows and search available. Selected/missing IDs remain visible. Assignment suggestions require confirmation and Save; no devices or credentials are deleted. See [registration lifecycle](docs/m2.4.md).
 
@@ -40,7 +42,7 @@ Device/user references are pseudonymized per server process. Tokens, authenticat
 
 The **Sanitized interface diagnostics** section contains a copyable `[ATC:UI]` report even when configuration loading fails. Initialization, API requests, controls, validation and saves have step codes, durations and counts. Native API requests retain actual HTTP status; events without an HTTP response explicitly use `unknown`. Field-specific validation logs the internal rule ID/position, reason and counts, while successful saving logs saved/active rule totals and restored selections. Reload remains usable after failed loading; existing settings are not replaced.
 
-A bounded native administrator-only endpoint forwards allowlisted UI diagnostics to `Jellyfin.Plugin.AudioTranscodingControl.Controllers.UiDiagnosticsController` (event IDs 3100/3101), independently of configuration loading. These development UI lifecycle events use native Information/Warning; global logger filters still apply. The server accepts no arbitrary messages, URLs or raw stack traces. Failed forwarding never blocks the UI; the local report remains available. The visible UI build and client report identify the executed resource; the server bridge distinguishes client UI version from its own build. The native page name changes with the plugin version to refresh its route/resource key. See [M2.4 behavior and screenshots](docs/m2.4.md).
+A bounded native administrator-only endpoint forwards allowlisted UI diagnostics to `Jellyfin.Plugin.AudioTranscodingControl.Controllers.UiDiagnosticsController` (event IDs 3100/3101), independently of configuration loading. These development UI lifecycle events use native Information/Warning; global logger filters still apply. The server accepts no arbitrary messages, URLs or raw stack traces. Failed forwarding never blocks the UI; the local report remains available. The visible UI build and client report identify the executed resource; the server bridge distinguishes client UI version from its own build. The native page name changes with the plugin version to refresh its route/resource key. See [M2.5 behavior, verification and screenshots](docs/m2.5.md).
 
 ## Known limitations
 
@@ -56,7 +58,7 @@ A bounded native administrator-only endpoint forwards allowlisted UI diagnostics
 
 Turn off the master switch or the individual rule and save to stop applying it to new PlaybackInfo requests. In Dashboard → Plugins, uninstall this plugin and restart Jellyfin when prompted. Existing sessions may continue using already generated URLs.
 
-Before updating, back up this plugin's own XML configuration from the server's `plugins/configurations` directory, normally `Jellyfin.Plugin.AudioTranscodingControl.xml`. To roll back, uninstall 0.2 through the native mechanism, install catalog version **0.1.0.0**, and restore your own backed-up 0.1 configuration while Jellyfin is stopped. Schema 2 is unchanged through 0.2.4. Schema 2 rules cannot be read by 0.1; restoring the old file is required to recover the previous pair. Do not modify other plugins or server configuration. Keep backups and private identifiers outside Git.
+Before updating, back up this plugin's own XML configuration from the server's `plugins/configurations` directory, normally `Jellyfin.Plugin.AudioTranscodingControl.xml`. To roll back, uninstall 0.2 through the native mechanism, install catalog version **0.1.0.0**, and restore your own backed-up 0.1 configuration while Jellyfin is stopped. Schema 2 is unchanged through 0.2.5. Schema 2 rules cannot be read by 0.1; restoring the old file is required to recover the previous pair. Do not modify other plugins or server configuration. Keep backups and private identifiers outside Git.
 
 ## Build and checks
 

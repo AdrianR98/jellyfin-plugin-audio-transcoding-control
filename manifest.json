@@ -8,6 +8,14 @@
     "owner": "AdrianR98",
     "versions": [
       {
+        "version": "0.2.5.0",
+        "changelog": "Inline full-width expandable rule cards with retained unsaved edits. Fix covered overflow actions, stable-ID deletion and native confirmation. Separate management from activation/save validation; preserve disabled drafts and empty rule lists. Add bounded action diagnostics. Playback, identity binding, permissions and video processing unchanged.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/download/v0.2.5/Jellyfin.Plugin.AudioTranscodingControl-0.2.5.zip",
+        "checksum": "1a1c6588249f2b03db34506ff99da3bd",
+        "timestamp": "2026-11-28T17:13:55Z"
+      },
+      {
         "version": "0.2.4.0",
         "changelog": "Verify native credential association across header and token-registration device identities; revalidate current audio tracks, policies and permissions. Preserve compatible AC3 direct play and video processing. Redesign the scoped native dashboard and device registration presentation with explicit assignment confirmation. Real Fire TV/receiver verification remains pending.",
         "targetAbi": "10.11.11.0",
