@@ -20,6 +20,24 @@ public sealed class MultiRuleTests
     private static PluginConfiguration Config(params TranscodingRule[] rules) => new() { SchemaVersion = 2, IsEnabled = true, Rules = rules };
 
     [Fact]
+    public void DisabledDraftAndEmptyRuleListRoundTripWithoutImplicitAll()
+    {
+        var draft = new TranscodingRule { IsEnabled = false, DeviceIds = [], UserIds = [] };
+        var config = Config(draft);
+        Assert.Empty(ConfigurationMigration.Errors(config));
+        var restored = JsonSerializer.Deserialize<PluginConfiguration>(JsonSerializer.Serialize(config))!;
+        Assert.Empty(Assert.Single(restored.Rules).DeviceIds);
+        Assert.Empty(restored.Rules[0].UserIds);
+        Assert.Null(RuleEvaluator.Select(Principal(), restored));
+        restored.Rules[0].IsEnabled = true;
+        Assert.Contains("empty-explicit-selection", ConfigurationMigration.Errors(restored));
+        Assert.Null(RuleEvaluator.Select(Principal(), restored));
+        restored.Rules = [];
+        restored = JsonSerializer.Deserialize<PluginConfiguration>(JsonSerializer.Serialize(restored))!;
+        Assert.Empty(restored.Rules); Assert.Empty(ConfigurationMigration.Errors(restored));
+    }
+
+    [Fact]
     public void SelectionUsesOrWithinAxesAndAndBetweenAxesAndFirstEnabledMatch()
     {
         var first = Rule(); var second = Rule(); var config = Config(first, second);
