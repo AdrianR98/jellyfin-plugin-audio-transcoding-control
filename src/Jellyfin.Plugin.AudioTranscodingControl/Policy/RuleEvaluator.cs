@@ -23,7 +23,13 @@ internal static class RuleEvaluator
 
     internal static TranscodingRule? Select(ClaimsPrincipal principal, PluginConfiguration config, Action<RuleDecision>? observe = null)
     {
-        if (!config.IsEnabled || config.SchemaVersion != ConfigurationMigration.CurrentSchema || !Identity(principal, out var device, out var user)) return null;
+        return Identity(principal, out var device, out var user) ? SelectVerified(user, device, config, observe) : null;
+    }
+
+    // Call only after verifying the native credential association to a retained negotiation device.
+    internal static TranscodingRule? SelectVerified(Guid user, string device, PluginConfiguration config, Action<RuleDecision>? observe = null)
+    {
+        if (!config.IsEnabled || config.SchemaVersion != ConfigurationMigration.CurrentSchema || user == Guid.Empty || string.IsNullOrWhiteSpace(device)) return null;
         if (config.Rules is null || config.Rules.Length > 64) return null;
         var duplicates = config.Rules.Where(r => r is not null).GroupBy(r => r.Id).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
         for (var index = 0; index < config.Rules.Length; index++)

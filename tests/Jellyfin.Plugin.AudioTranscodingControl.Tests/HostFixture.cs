@@ -36,6 +36,9 @@ internal sealed class HostFixture
     internal string ClaimDevice { get; set; } = DeviceId;
     internal bool DuplicateDeviceClaim { get; set; }
     internal bool DebugLogging { get; set; } = true;
+    internal string Token { get; set; } = "sentinel-token-never-log";
+    internal string TokenDevice { get; set; } = DeviceId;
+    internal Guid? CredentialUser { get; set; }
 
     internal HostFixture(string codec = "eac3", int channels = 6)
     {
@@ -60,7 +63,7 @@ internal sealed class HostFixture
         var claims = new List<Claim>
         {
             new(InternalClaimTypes.DeviceId, ClaimDevice), new(InternalClaimTypes.UserId, User.Id.ToString("N")),
-            new(InternalClaimTypes.Token, "sentinel-token-never-log"), new(ClaimTypes.Role, "Administrator"),
+            new(InternalClaimTypes.Token, Token), new(InternalClaimTypes.IsApiKey, "False"), new(ClaimTypes.Role, "Administrator"),
         };
         if (DuplicateDeviceClaim) claims.Add(new(InternalClaimTypes.DeviceId, ClaimDevice));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
@@ -97,7 +100,13 @@ internal sealed class HostFixture
         var encoder = Stub<IMediaEncoder>((m, a) => m.Name.StartsWith("Can", StringComparison.Ordinal) ? EncoderAvailable : throw new NotSupportedException(m.Name));
         var config = Stub<IServerConfigurationManager>((m, a) => m.Name == "get_Configuration" ? new ServerConfiguration() : throw new NotSupportedException(m.Name));
         var network = Stub<INetworkManager>((m, a) => m.Name == "IsInLocalNetwork" ? true : throw new NotSupportedException(m.Name));
-        var devices = Stub<IDeviceManager>((m, a) => m.Name == "GetCapabilities" ? new ClientCapabilities() : throw new NotSupportedException(m.Name));
+        var devices = Stub<IDeviceManager>((m, a) => m.Name switch
+        {
+            "GetCapabilities" => new ClientCapabilities(),
+            "GetDevices" => new MediaBrowser.Model.Querying.QueryResult<Jellyfin.Database.Implementations.Entities.Security.Device>
+            { Items = [new(CredentialUser ?? User.Id, "Jellyfin for Android TV", "0.20.1", "Synthetic", TokenDevice) { AccessToken = Token }], TotalRecordCount = 1 },
+            _ => throw new NotSupportedException(m.Name),
+        });
         services.AddSingleton(users).AddSingleton(library).AddSingleton(sources).AddSingleton(encoder).AddSingleton(config).AddSingleton(network).AddSingleton(devices);
         services.AddSingleton(new MediaInfoHelper(users, library, sources, encoder, config, NullLogger<MediaInfoHelper>.Instance, network, devices));
     }
@@ -109,6 +118,7 @@ internal sealed class HostFixture
         services.AddSingleton(Stub<ILibraryManager>((m, a) => throw new NotSupportedException()));
         services.AddSingleton(Stub<IMediaSourceManager>((m, a) => throw new NotSupportedException()));
         services.AddSingleton(Stub<IMediaEncoder>((m, a) => throw new NotSupportedException()));
+        services.AddSingleton(Stub<IDeviceManager>((m, a) => throw new NotSupportedException()));
     }
 
     private static T Stub<T>(Func<MethodInfo, object?[]?, object?> handler) where T : class
