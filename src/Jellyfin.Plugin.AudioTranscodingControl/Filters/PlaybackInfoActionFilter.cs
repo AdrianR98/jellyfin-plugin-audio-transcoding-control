@@ -227,7 +227,8 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         // Retain an authenticated context even when this track is preserved; later track selection is mutable.
         if (rule.PreserveStereo && audio.Channels <= 2) return Skip("stereo-preserved");
         if (rule.PreserveCompatibleAudio && audio.Codec == "ac3" && audio.Channels <= rule.MaxAudioChannels
-            && audio.BitRate is > 0 && audio.BitRate <= rule.MaxAudioBitrate)
+            && audio.BitRate is > 0 && audio.BitRate <= rule.MaxAudioBitrate
+            && !user.HasPermission(PermissionKind.EnableVideoPlaybackTranscoding) && !user.HasPermission(PermissionKind.EnablePlaybackRemuxing))
             return Skip("compatible-ac3-preserved-context-retained");
 
         if (rule.EnableDiagnostics && options.DeviceProfileChanges && diagnostics.Enabled(LogLevel.Debug))

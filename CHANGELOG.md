@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4 — M2.4, playback association and dashboard pre-release
+
+- Correct header-device versus token-registration context lookup using a verified native credential/user association and process-local HMAC; reject unrelated or ambiguous contexts without trusting routing IDs or names.
+- Revalidate mutable audio tracks and current rules/permissions. Preserve compatible multi-track AC3 direct playback and stereo while retaining playback context. Keep video processing and native jobs unchanged.
+- Redesign the native dashboard with scoped responsive cards, summaries, switches, overflow actions, collapsible editing, separate diagnostics, and English/German support.
+- Group native device registrations for display only; retain independently selected IDs, missing entries, activity filtering and search. Require explicit confirmation for assignment replacement/keeping both; never delete registrations or revoke credentials.
+- Native FFmpeg verification: AC3 six-channel/640000 with HEVC copy across automatic renegotiation, track changes, seeking/resume; unrelated credential retains AAC. 50 tests and focused native UI smoke; dark/light screenshots. Real Fire TV and receiver confirmation remains pending.
+
 ## 0.2.3 — M2.3, progressive identity compatibility pre-release
 
 - Separate the authenticated device from the native progressive job-routing DeviceId. Keep exact authenticated user/device/session lookup; additionally accept only the exact decoded device transport value captured from that context's successful native PlaybackInfo response.
