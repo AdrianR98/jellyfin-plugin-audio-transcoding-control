@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3 — M2.3, progressive identity compatibility pre-release
+
+- Separate the authenticated device from the native progressive job-routing DeviceId. Keep exact authenticated user/device/session lookup; additionally accept only the exact decoded device transport value captured from that context's successful native PlaybackInfo response.
+- Retain current rule/item/source/track/permission checks and all video arguments. Reject unissued differences, duplicate query identities and query/bound-argument disagreement; do not normalize opaque identities or authenticate using query values.
+- Add per-field identity origins/presence, process-pseudonymized references, individual comparison results, context lookup results, specific skip reasons and a shared negotiation reference at Debug.
+- Use a versioned native dashboard page name with the existing stable alias. Display UI 0.2.3.0 and report actual client UI version separately from the server build; cached older clients are labeled unknown when they omit their version. Checkbox selection and validation behavior are unchanged.
+- Release build, 48 existing/focused test cases and one targeted native header-to-token-only progressive check: synthetic TrueHD to AC3 six-channel/640000 with HEVC copy. Both native page addresses serve the new resource.
+- The exact productive mismatch is not established by the old aggregate log. Native URL decoding differences are reproduced; no speculative device aliases or relaxed authenticated-device matching are introduced. Real Fire TV/receiver confirmation remains required.
+
 ## 0.2.2 — M2.2, real-device path compatibility pre-release
 
 - Fix the video-source flag/audio-permission mismatch; resolve omitted source IDs only for a unique native source and distinguish source/track/profile reasons at Debug.

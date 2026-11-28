@@ -1,0 +1,31 @@
+{
+  "serverVersion": "10.11.11",
+  "pluginVersion": "0.2.3.0",
+  "syntheticMedia": true,
+  "checks": {
+    "nativeHeaderPlaybackInfoAndTokenOnlyStreaming": true,
+    "nativeIssuedQueryDiffersFromExactAuthenticatedDevice": true,
+    "exactIssuedTransportMatchAccepted": true,
+    "outputAudio": {
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "channels": 6,
+      "bit_rate": "640000"
+    },
+    "outputVideo": {
+      "codec_name": "hevc",
+      "codec_type": "video",
+      "width": 3840,
+      "height": 2160
+    },
+    "ffmpegVideoCopy": true,
+    "nativeVersionedPageAndLegacyAlias": true,
+    "singleNativeSidebarEntry": true,
+    "pluginLogsExcludeFixtureIdentitiesTokensAndPaths": true,
+    "servedResourceUiVersion": "0.2.3.0"
+  },
+  "limits": [
+    "Reproduced native URL decoding difference with a synthetic opaque device ID; the exact productive mismatch remains unobserved.",
+    "No Fire TV or receiver/projector test, no HDR/Dolby Vision/Atmos proof."
+  ]
+}

@@ -127,8 +127,12 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
                 && result.Result is ObjectResult { Value: PlaybackInfoResponse { ErrorCode: null, PlaySessionId: not null } info }
                 && info.MediaSources.Count(source => string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase)) == 1)
             {
+                var offer = info.MediaSources.Single(source => string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase));
+                proof = proof.WithNativeOffer(offer.TranscodingUrl);
                 var retained = _sessions.Remember(info.PlaySessionId, proof);
-                diagnostics.Write(LogLevel.Debug, 2403, "Validated PlaybackInfo context; retained={Retained}; scoped-progressive-MKV=true; no-identity-or-session-id-logged=true", retained);
+                diagnostics.Write(LogLevel.Debug, 2403, "Validated PlaybackInfo context; retained={Retained}; scoped-progressive-MKV=true; negotiationRef={NegotiationRef}; authenticatedDeviceOrigin=native-authentication-claim; authenticatedDeviceRef={AuthenticatedDeviceRef}; offeredDeviceOrigin=native-PlaybackInfo-TranscodingUrl-query; offeredDeviceState={OfferedDeviceState}; offeredDeviceRef={OfferedDeviceRef}; offeredEqualsAuthenticated={OfferedEqualsAuthenticated}",
+                    retained, PlaybackPolicySessions.SessionReference(info.PlaySessionId), PluginDiagnostics.Reference(proof.Device),
+                    proof.OfferedDeviceState, PluginDiagnostics.Reference(proof.OfferedDevice), proof.OfferedDevice is null ? "not-evaluated" : string.Equals(proof.OfferedDevice, proof.Device, StringComparison.Ordinal).ToString());
             }
             if (selected?.EnableDiagnostics == true && config.Diagnostics.PlaybackResponseAnalysis)
                 AnalyzeResponse(result, selected, applied, diagnostics);

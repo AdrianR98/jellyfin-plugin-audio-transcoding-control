@@ -63,6 +63,7 @@
 <button is="emby-button" type="submit" class="raised button-submit block" id="atcSave" disabled><span data-t="save">Save configuration</span></button>
 <details><summary data-t="diagnosticReport">Sanitized interface diagnostics</summary>
 <p class="fieldDescription" data-t="diagnosticHelp">No credentials, identities or HTTP payloads. Copy this report when reporting an interface failure.</p>
+<p>UI <span id="atcUiVersion">0.2.3.0</span></p>
 <textarea id="atcReport" readonly rows="10" style="width:100%;box-sizing:border-box" aria-label="Sanitized interface diagnostics"></textarea>
 <button is="emby-button" type="button" class="raised" id="atcCopyReport"><span data-t="copyReport">Copy report</span></button>
 </details></form>
@@ -70,7 +71,7 @@
 <script>
 (function () {
     'use strict';
-    const uiVersion = '0.2.2.0';
+    const uiVersion = '0.2.3.0';
     const candidates = document.querySelectorAll('#ATCConfigPage');
     const page = document.currentScript && document.currentScript.closest('#ATCConfigPage') || candidates[candidates.length - 1];
     if (!page) { console.error('[ATC:UI] interface: missing page root; version=' + uiVersion); return; }
@@ -136,7 +137,7 @@
         let client;try{client=apiClient();}catch(_){return;}
         forwarding=true;
         const batch=pending.splice(0,16);
-        try { await client.ajax({type:'POST',url:client.getUrl('AudioTranscodingControl/UiDiagnostics'),data:JSON.stringify({SessionId:sessionId,Events:batch.map(e=>Object.assign({},e,{Status:typeof e.Status==='number'?e.Status:null}))}),contentType:'application/json'}); }
+        try { await client.ajax({type:'POST',url:client.getUrl('AudioTranscodingControl/UiDiagnostics'),data:JSON.stringify({SessionId:sessionId,UiVersion:uiVersion,Events:batch.map(e=>Object.assign({},e,{Status:typeof e.Status==='number'?e.Status:null}))}),contentType:'application/json'}); }
         catch(error){serverDiagnostics=false;console.warn('[ATC:UI] server diagnostics unavailable; status='+safeError(error).Status+'; local sanitized report retained');}
         finally{forwarding=false;if(pending.length&&serverDiagnostics&&!disposed)flushTimer=window.setTimeout(flush,750);}
     }

@@ -45,11 +45,18 @@ public sealed class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages() => [new()
     {
-        Name = "audiotranscodingcontrol",
+        // Jellyfin Web caches pages by their native Name. A new build gets a new route/resource key.
+        Name = "audiotranscodingcontrol_" + Version.ToString().Replace('.', '_'),
         DisplayName = "Audio Transcoding Control",
         EnableInMainMenu = true,
         MenuSection = "server",
         MenuIcon = "graphic_eq",
+        EmbeddedResourcePath = "Jellyfin.Plugin.AudioTranscodingControl.Configuration.configPage.html",
+    }, new()
+    {
+        Name = "audiotranscodingcontrol",
+        DisplayName = "Audio Transcoding Control",
+        EnableInMainMenu = false,
         EmbeddedResourcePath = "Jellyfin.Plugin.AudioTranscodingControl.Configuration.configPage.html",
     }];
 

@@ -19,6 +19,9 @@ public sealed class UiDiagnosticsTests
         var entry = new UiDiagnosticEvent { Event = "error", Step = "configuration", Code = "invalid-schema", Kind = "TypeError", Sequence = 1, Frames = ["normalize:123:4"] };
         var batch = new UiDiagnosticBatch { SessionId = Guid.NewGuid(), Events = [entry] };
         Assert.IsType<NoContentResult>(controller.Post(batch));
+        batch.UiVersion = "0.2.3.0"; Assert.IsType<NoContentResult>(controller.Post(batch));
+        batch.UiVersion = "arbitrary-private-text"; Assert.IsType<BadRequestResult>(controller.Post(batch));
+        batch.UiVersion = null; // Cached older clients omit this field; the server must call it unknown.
         entry.Status = 204; Assert.IsType<NoContentResult>(controller.Post(batch));
         entry.Status = 0; Assert.IsType<BadRequestResult>(controller.Post(batch));
         entry.Status = null;

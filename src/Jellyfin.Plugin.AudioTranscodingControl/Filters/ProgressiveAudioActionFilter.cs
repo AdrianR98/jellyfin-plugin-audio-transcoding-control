@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 using Jellyfin.Api.Controllers;
+using Jellyfin.Api.Constants;
 using Jellyfin.Data;
 using Jellyfin.Data.Enums;
 using System.Diagnostics;
@@ -82,13 +83,53 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
         { Skip("progressive-non-streaming-context"); return; }
         if (Arg<int>("audioSampleRate") is { } sampleRate && sampleRate is not (32000 or 44100 or 48000))
         { Skip("progressive-audio-sample-rate-unsupported"); return; }
+        var queryDevices = context.HttpContext.Request.Query["DeviceId"];
+        var requestedDevice = Text("deviceId");
+        var deviceClaims = context.HttpContext.User.FindAll(InternalClaimTypes.DeviceId).ToArray();
+        var userClaims = context.HttpContext.User.FindAll(InternalClaimTypes.UserId).ToArray();
+        var identityValid = RuleEvaluator.Identity(context.HttpContext.User, out var device, out var userId);
+        log.Write(LogLevel.Debug, 3205, "Progressive identity fields; authenticatedIdentityValid={IdentityValid}; deviceClaimCount={DeviceClaimCount}; userClaimCount={UserClaimCount}; authenticatedDeviceOrigin=native-authentication-claim-header-or-token-record; authenticatedDeviceRef={AuthenticatedDeviceRef}; queryDeviceOrigin=ASP.NET-decoded-query; queryDeviceCount={QueryDeviceCount}; queryDeviceRef={QueryDeviceRef}; boundDeviceOrigin=native-VideosController-FromQuery; boundDevicePresent={BoundDevicePresent}; boundDeviceRef={BoundDeviceRef}; authorizationHeaderPresent={AuthorizationHeaderPresent}; legacyAuthorizationHeaderPresent={LegacyAuthorizationHeaderPresent}; negotiationRef={NegotiationRef}",
+            identityValid, deviceClaims.Length, userClaims.Length, PluginDiagnostics.Reference(deviceClaims.Length == 1 ? deviceClaims[0].Value : null), queryDevices.Count, PluginDiagnostics.Reference(queryDevices.Count == 1 ? queryDevices[0] : null),
+            !string.IsNullOrEmpty(requestedDevice), PluginDiagnostics.Reference(requestedDevice), context.HttpContext.Request.Headers.ContainsKey("Authorization"),
+            context.HttpContext.Request.Headers.ContainsKey("X-Emby-Authorization"), PlaybackPolicySessions.SessionReference(Text("playSessionId")));
+        if (!identityValid)
+        {
+            Skip(context.HttpContext.User.Identity?.IsAuthenticated != true ? "progressive-request-unauthenticated"
+                : deviceClaims.Length == 0 ? "progressive-authenticated-device-missing"
+                : deviceClaims.Length > 1 ? "progressive-authenticated-device-ambiguous"
+                : userClaims.Length == 0 ? "progressive-authenticated-user-missing"
+                : userClaims.Length > 1 ? "progressive-authenticated-user-ambiguous" : "progressive-authenticated-identity-invalid");
+            return;
+        }
         var rule = RuleEvaluator.Select(context.HttpContext.User, config);
-        if (rule is null || !RuleEvaluator.Identity(context.HttpContext.User, out var device, out var userId)) { Skip("progressive-no-valid-rule"); return; }
-        if (Text("deviceId") is { Length: > 0 } requestedDevice && !string.Equals(requestedDevice, device, StringComparison.Ordinal))
-        { Skip("progressive-device-claim-mismatch"); return; }
+        if (rule is null) { Skip("progressive-no-valid-rule"); return; }
         var proof = _sessions.Find(userId, device, Text("playSessionId"));
-        if (proof is null || proof.Item != Arg<Guid>("itemId") || proof.Fingerprint != PlaybackPolicySessions.Fingerprint(rule))
-        { Skip("progressive-no-current-playbackinfo-context"); return; }
+        log.Write(LogLevel.Debug, 3206, "Progressive context comparisons; negotiationRef={NegotiationRef}; lookupOrigin=authenticated-user-device-and-native-play-session; contextFound={Found}; authenticatedUserEqualsContext={UserMatch}; authenticatedDeviceEqualsContext={DeviceMatch}; itemEqualsContext={ItemMatch}; currentRuleEqualsContext={RuleMatch}; offeredDeviceState={OfferedDeviceState}; offeredDeviceRef={OfferedDeviceRef}; boundEqualsAuthenticated={ClaimMatch}; boundEqualsNativeOffer={OfferMatch}; queryEqualsBound={QueryMatch}",
+            PlaybackPolicySessions.SessionReference(Text("playSessionId")), proof is not null,
+            proof is null ? "not-evaluated" : (proof.User == userId).ToString(), proof is null ? "not-evaluated" : string.Equals(proof.Device, device, StringComparison.Ordinal).ToString(),
+            proof is null ? "not-evaluated" : (proof.Item == Arg<Guid>("itemId")).ToString(), proof is null ? "not-evaluated" : (proof.Fingerprint == PlaybackPolicySessions.Fingerprint(rule)).ToString(),
+            proof?.OfferedDeviceState ?? "unavailable", PluginDiagnostics.Reference(proof?.OfferedDevice),
+            requestedDevice is null ? "not-evaluated" : string.Equals(requestedDevice, device, StringComparison.Ordinal).ToString(),
+            requestedDevice is null || proof?.OfferedDevice is null ? "not-evaluated" : string.Equals(requestedDevice, proof.OfferedDevice, StringComparison.Ordinal).ToString(),
+            queryDevices.Count != 1 ? "not-evaluated" : string.Equals(queryDevices[0], requestedDevice, StringComparison.Ordinal).ToString());
+        if (string.IsNullOrEmpty(Text("playSessionId"))) { Skip("progressive-play-session-missing"); return; }
+        if (!Guid.TryParse(Text("playSessionId"), out var sessionId) || sessionId == Guid.Empty) { Skip("progressive-play-session-invalid"); return; }
+        if (proof is null) { Skip("progressive-playbackinfo-context-not-found"); return; }
+        if (proof.Item != Arg<Guid>("itemId")) { Skip("progressive-context-item-mismatch"); return; }
+        if (proof.Fingerprint != PlaybackPolicySessions.Fingerprint(rule)) { Skip("progressive-context-rule-changed"); return; }
+        if (queryDevices.Count > 1) { Skip("progressive-query-device-ambiguous"); return; }
+        if (queryDevices.Count == 1 && (string.IsNullOrWhiteSpace(queryDevices[0]) || queryDevices[0]!.Length > 512 || queryDevices[0]!.Any(char.IsControl)))
+        { Skip("progressive-query-device-invalid"); return; }
+        if (queryDevices.Count == 0 ? requestedDevice is not null : !string.Equals(queryDevices[0], requestedDevice, StringComparison.Ordinal))
+        { Skip("progressive-device-argument-query-mismatch"); return; }
+        // The optional native job-routing DeviceId is not an authenticated claim. Accept only the exact
+        // authenticated ID or the exact transport value issued in THIS authenticated PlaybackInfo context.
+        // No case folding, trimming, second decoding, query-based context lookup or claim substitution.
+        if (requestedDevice is not null && !string.Equals(requestedDevice, device, StringComparison.Ordinal)
+            && !(proof.OfferedDeviceState == "single" && string.Equals(requestedDevice, proof.OfferedDevice, StringComparison.Ordinal)))
+        { Skip("progressive-device-neither-authenticated-nor-issued"); return; }
+        log.Write(LogLevel.Debug, 3207, "Progressive device check accepted; negotiationRef={NegotiationRef}; reason={DeviceCheck}; authenticated-context-required=true; deviceArgumentsUnchanged=true",
+            PlaybackPolicySessions.SessionReference(Text("playSessionId")), requestedDevice is null ? "optional-routing-device-absent" : string.Equals(requestedDevice, device, StringComparison.Ordinal) ? "exact-authenticated-device" : "exact-native-issued-transport-device");
         var user = _users.GetUserById(userId);
         log.Write(LogLevel.Debug, 3204, "Progressive permissions and request; playback={Playback}; audioTranscode={Audio}; videoTranscode={Video}; remux={Remux}; sourceIdPresent={Source}; audioIndexPresent={AudioIndex}; allowAudioCopy={AudioCopy}; allowVideoCopy={VideoCopy}",
             user?.HasPermission(PermissionKind.EnableMediaPlayback) ?? false, user?.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding) ?? false,
