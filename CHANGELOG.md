@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.5 — M2.5, expandable cards and rule management pre-release
+
+- Mount a single inline editor inside the expanded full-width rule card; start collapsed, retain unsaved edits and preserve native dashboard integration.
+- Fix overflow menus covered by subsequent disabled cards due to opacity stacking contexts. Resolve actions by stable rule IDs and use native named deletion confirmation.
+- Remove validation from routine editor synchronization and management. Validate activation and Save; retain disabled drafts and empty rule lists without implicit All scopes.
+- Add structured rule action results, positions, internal IDs, counts and dirty state to sanitized UI/native server diagnostics.
+- Release build and 51 tests passed; focused native Jellyfin Web checks cover one/two/seven cards, all deletions including empty new drafts, save/reload, cancellation, retained edits and responsive layouts.
+- Compare available production Dark Knight/Dune/LOTR logs: actual AC3 5.1(side), 48 kHz, 640 kbit/s with video copy and written frames. Receiver/client output remains unproven for Dark Knight; no playback changes.
+
 ## 0.2.4 — M2.4, playback association and dashboard pre-release
 
 - Correct header-device versus token-registration context lookup using a verified native credential/user association and process-local HMAC; reject unrelated or ambiguous contexts without trusting routing IDs or names.

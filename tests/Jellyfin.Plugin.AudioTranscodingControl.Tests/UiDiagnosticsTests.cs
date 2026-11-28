@@ -31,6 +31,11 @@ public sealed class UiDiagnosticsTests
         Assert.IsType<BadRequestResult>(controller.Post(batch));
         entry.Element = "none"; entry.Event = "arbitrary-client-text";
         Assert.IsType<BadRequestResult>(controller.Post(batch));
+        entry.Event = "rule-action"; entry.Code = "delete"; entry.Result = "succeeded";
+        entry.RuleId = Guid.NewGuid(); entry.RulePosition = 3; entry.RulesBefore = 3; entry.RulesAfter = 2; entry.Dirty = true;
+        batch.UiVersion = "0.2.5.0"; Assert.IsType<NoContentResult>(controller.Post(batch));
+        entry.Reason = "arbitrary-private-text"; Assert.IsType<BadRequestResult>(controller.Post(batch));
+        entry.Reason = "none";
         entry.Event = "error"; batch.Events = Enumerable.Repeat(entry, 33).ToArray();
         Assert.IsType<BadRequestResult>(controller.Post(batch));
     }
