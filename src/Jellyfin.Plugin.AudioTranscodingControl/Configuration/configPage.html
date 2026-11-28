@@ -1,77 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Audio Transcoding Control</title></head>
-<body>
+<html lang="en"><head><meta charset="utf-8"><title>Audio Transcoding Control</title></head><body>
 <div id="ATCConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
 <style>
-#ATCConfigPage .atc-toolbar{display:flex;flex-wrap:wrap;gap:.5em;align-items:center;margin:.8em 0}
-#ATCConfigPage .atc-card{border:1px solid var(--line-color,rgba(128,128,128,.4));border-radius:.4em;padding:.8em;margin:.6em 0}
-#ATCConfigPage .atc-card[aria-current=true]{border-color:var(--accent,#00a4dc)}
-#ATCConfigPage .atc-card-title{font-weight:600;overflow-wrap:anywhere}
-#ATCConfigPage .atc-picks{max-height:28em;overflow:auto;width:100%;border:1px solid #8886;border-radius:.3em}
-#ATCConfigPage .atc-choice-row{display:flex;align-items:flex-start;gap:.8em;padding:.8em;cursor:pointer;border-bottom:1px solid #8884;white-space:normal;overflow-wrap:anywhere}
-#ATCConfigPage .atc-choice-row.atc-selected{background:rgba(0,164,220,.16);border-inline-start:.25em solid #00a4dc}
-#ATCConfigPage .atc-choice-row input{flex-shrink:0;margin-top:.2em;width:1.25em;height:1.25em;accent-color:var(--accent,#00a4dc)}
-#ATCConfigPage .atc-choice-text{display:block;min-width:0;white-space:normal;overflow-wrap:anywhere}
-#ATCConfigPage .atc-choice-detail{display:block;opacity:.8;font-size:.9em;line-height:1.5;margin-top:.25em}
-#ATCConfigPage .atc-invalid{outline:2px solid #e37373;outline-offset:2px}
-#ATCConfigPage .atc-field-error{color:#f2a1a1;line-height:1.4;margin:.6em 0}
-#ATCConfigPage fieldset{border:1px solid rgba(128,128,128,.4);padding:1em;margin:1.2em 0;min-width:0}
-#ATCConfigPage .atc-note{white-space:pre-line;overflow-wrap:anywhere;line-height:1.5}
-#ATCConfigPage .atc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17em),1fr));gap:1em}
+#ATCConfigPage{--atc-accent:var(--theme-primary-color,#087f75);--atc-line:rgba(128,128,128,.28);--atc-panel:rgba(128,128,128,.065);--atc-selected:rgba(8,153,139,.10);color:inherit;font:inherit;line-height:1.5}
+#ATCConfigPage #ATCForm{max-width:none;width:100%;margin:0}
+#ATCConfigPage .content-primary{max-width:1160px;margin:0 auto;padding:1.4rem;box-sizing:border-box}
+#ATCConfigPage h1,#ATCConfigPage h2,#ATCConfigPage h3,#ATCConfigPage h4,#ATCConfigPage p{margin:0}
+#ATCConfigPage h1{font-size:clamp(1.45rem,3vw,2rem);font-weight:650;letter-spacing:-.025em;line-height:1.2}
+#ATCConfigPage h2{font-size:1.25rem;font-weight:600}#ATCConfigPage h3,#ATCConfigPage h4{font-size:1rem;font-weight:600}
+#ATCConfigPage button,#ATCConfigPage input,#ATCConfigPage select,#ATCConfigPage textarea{font:inherit}
+#ATCConfigPage button,#ATCConfigPage summary,#ATCConfigPage a,#ATCConfigPage input,#ATCConfigPage select,#ATCConfigPage textarea{touch-action:manipulation}
+#ATCConfigPage :focus-visible{outline:3px solid var(--atc-accent);outline-offset:3px}
 #ATCConfigPage [hidden]{display:none!important}
-#ATCConfigPage .atc-warning{border-left:.25em solid #dba440;padding:.6em .9em;margin:.5em 0}
+#ATCConfigPage .atc-header,#ATCConfigPage .atc-heading,#ATCConfigPage .atc-toolbar,#ATCConfigPage .atc-card-top,#ATCConfigPage .atc-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+#ATCConfigPage .atc-brand{display:flex;gap:1rem;align-items:center;min-width:0;flex:1}
+#ATCConfigPage .atc-icon-tile{display:grid;place-items:center;width:3.4rem;height:3.4rem;border:1px solid var(--atc-line);border-radius:1rem;flex:none;color:var(--atc-accent);background:var(--atc-selected)}
+#ATCConfigPage .atc-icon{height:1.2rem;width:1.2rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;flex:none}
+#ATCConfigPage .atc-icon-tile .atc-icon{width:1.8rem;height:1.8rem}
+#ATCConfigPage .atc-subtitle,#ATCConfigPage .atc-muted,#ATCConfigPage .fieldDescription{opacity:.74;font-size:.88rem;line-height:1.5}
+#ATCConfigPage .atc-subtitle{margin-top:.5rem}#ATCConfigPage .atc-header-controls{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+#ATCConfigPage .atc-version,#ATCConfigPage .atc-chip{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--atc-line);padding:.22rem .6rem;border-radius:2rem;font-size:.78rem;font-weight:550;white-space:nowrap}
+#ATCConfigPage .atc-version{margin-top:.6rem}#ATCConfigPage .atc-language select{width:auto;min-width:6rem}
+#ATCConfigPage .atc-tabs{display:flex;gap:.35rem;border-bottom:1px solid var(--atc-line);margin:1.7rem 0 1.3rem;padding-bottom:.5rem}
+#ATCConfigPage .atc-tabs button{background:transparent;color:inherit;border:0;border-radius:.5rem;padding:.65rem 1rem;cursor:pointer;font-weight:550}
+#ATCConfigPage .atc-tabs button[aria-selected=true]{background:var(--atc-selected);color:inherit;box-shadow:inset 0 -2px var(--atc-accent)}
+#ATCConfigPage .atc-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem;margin:1rem 0 1.5rem}
+#ATCConfigPage .atc-stat{border:1px solid var(--atc-line);background:var(--atc-panel);border-radius:.85rem;padding:1rem 1.15rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+#ATCConfigPage .atc-stat strong{display:block;font-size:1.8rem;line-height:1.2;font-variant-numeric:tabular-nums;font-weight:600;margin-bottom:.2rem}
+#ATCConfigPage .atc-stat .atc-icon{opacity:.5;width:1.5rem;height:1.5rem}
+#ATCConfigPage .atc-section{margin:1.5rem 0}#ATCConfigPage .atc-heading{margin-bottom:.9rem}
+#ATCConfigPage .atc-rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:1rem}
+#ATCConfigPage .atc-card{border:1px solid var(--atc-line);border-radius:.85rem;padding:1.15rem;background:var(--atc-panel);min-width:0}
+#ATCConfigPage .atc-card[aria-current=true]{border-color:var(--atc-accent);box-shadow:inset 3px 0 var(--atc-accent)}
+#ATCConfigPage .atc-card.atc-card-off{opacity:.8}#ATCConfigPage .atc-card-title{font-size:1rem;font-weight:600;overflow-wrap:anywhere;flex:1;min-width:0}
+#ATCConfigPage .atc-priority{font-size:.8rem;font-variant-numeric:tabular-nums;border:1px solid var(--atc-line);border-radius:.4rem;padding:.18rem .45rem;opacity:.7}
+#ATCConfigPage .atc-output{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:1rem 0;color:inherit}
+#ATCConfigPage .atc-output strong{font-size:1rem}#ATCConfigPage .atc-output .atc-icon{color:var(--atc-accent)}
+#ATCConfigPage .atc-scopes{display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;font-size:.85rem;margin:0 0 1rem;overflow-wrap:anywhere}
+#ATCConfigPage .atc-scopes dt{opacity:.68}#ATCConfigPage .atc-scopes dd{margin:0;min-width:0}
+#ATCConfigPage .atc-toolbar{justify-content:flex-start;gap:.5rem;margin:.7rem 0}
+#ATCConfigPage .atc-button{border:1px solid var(--atc-line);border-radius:.5rem;padding:.55rem .85rem;background:transparent;color:inherit;cursor:pointer;font-size:.88rem;font-weight:550;min-height:2.55rem;display:inline-flex;align-items:center;gap:.45rem;justify-content:center;text-decoration:none;box-sizing:border-box}
+#ATCConfigPage .atc-button:hover:not(:disabled),#ATCConfigPage .atc-tabs button:hover{background:var(--atc-selected)}
+#ATCConfigPage .atc-button.atc-primary{background:var(--atc-accent);border-color:var(--atc-accent);color:#fff}
+#ATCConfigPage button:disabled{opacity:.4;cursor:default}
+#ATCConfigPage .atc-menu{position:relative;margin-inline-start:auto}
+#ATCConfigPage .atc-menu>summary{list-style:none;cursor:pointer;border:1px solid var(--atc-line);border-radius:.5rem;min-width:2.5rem;text-align:center;padding:.4rem .6rem;box-sizing:border-box}
+#ATCConfigPage .atc-menu>summary::-webkit-details-marker{display:none}
+#ATCConfigPage .atc-menu-items{position:absolute;right:0;top:100%;z-index:5;min-width:11rem;display:grid;border:1px solid var(--atc-line);border-radius:.5rem;padding:.35rem;background:var(--atc-menu-background,#202526);color:var(--atc-menu-text,#fff);box-shadow:0 5px 18px #0003}
+#ATCConfigPage .atc-menu-items button{border:0;justify-content:flex-start;text-align:start}
+#ATCConfigPage .atc-menu-items button[data-atc-action=delete]{color:#ffb9b9}
+#ATCConfigPage .atc-switch{display:inline-flex;align-items:center;gap:.55rem;position:relative;cursor:pointer;font-size:.85rem;line-height:1.4}
+#ATCConfigPage .atc-switch input{position:absolute;opacity:0;width:1px;height:1px}
+#ATCConfigPage .atc-switch-track{width:2.25rem;height:1.3rem;flex:none;box-sizing:border-box;border:1px solid var(--atc-line);border-radius:2rem;background:#8886;position:relative;transition:background .12s ease}
+#ATCConfigPage .atc-switch-track:after{content:"";display:block;width:.9rem;height:.9rem;position:absolute;left:.16rem;top:.13rem;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0005;transition:transform .12s ease}
+#ATCConfigPage .atc-switch input:checked+.atc-switch-track{background:var(--atc-accent);border-color:var(--atc-accent)}
+#ATCConfigPage .atc-switch input:checked+.atc-switch-track:after{transform:translateX(.9rem)}
+#ATCConfigPage .atc-switch input:focus-visible+.atc-switch-track{outline:3px solid var(--atc-accent);outline-offset:3px}
+#ATCConfigPage .atc-switch:has(input:disabled){opacity:.45;cursor:default}
+#ATCConfigPage .atc-disclosure{border:1px solid var(--atc-line);border-radius:.85rem;margin:1rem 0;background:var(--atc-panel)}
+#ATCConfigPage .atc-disclosure>summary{padding:1rem 1.15rem;cursor:pointer;font-weight:550;overflow-wrap:anywhere}
+#ATCConfigPage .atc-disclosure-content{padding:0 1.15rem 1.15rem}
+#ATCConfigPage fieldset{border:0;padding:0;margin:0;min-width:0}
+#ATCConfigPage .atc-editor-section{border-top:1px solid var(--atc-line);margin-top:1.2rem;padding-top:1.1rem}
+#ATCConfigPage .atc-editor-section>h3{margin-bottom:.8rem}
+#ATCConfigPage .atc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr));gap:1.1rem}
+#ATCConfigPage .atc-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+#ATCConfigPage .atc-field{display:grid;gap:.4rem;margin-bottom:.9rem;min-width:0}
+#ATCConfigPage .atc-field>label{font-size:.87rem;font-weight:550}
+#ATCConfigPage input[type=text],#ATCConfigPage input[type=search],#ATCConfigPage select,#ATCConfigPage textarea{width:100%;box-sizing:border-box;border:1px solid var(--atc-line);border-radius:.45rem;background:var(--atc-panel);color:inherit;padding:.6rem .7rem;min-height:2.6rem}
+#ATCConfigPage select option{color:CanvasText;background:Canvas}
+#ATCConfigPage .atc-scope-choice{display:flex;flex-wrap:wrap;gap:.8rem;margin:.6rem 0 .8rem;font-size:.86rem}
+#ATCConfigPage .atc-scope-choice label{display:flex;align-items:center;gap:.35rem;cursor:pointer}
+#ATCConfigPage input[type=radio],#ATCConfigPage input[type=checkbox]{accent-color:var(--atc-accent)}
+#ATCConfigPage .atc-picks{max-height:30rem;overflow:auto;border:1px solid var(--atc-line);border-radius:.55rem;margin-top:.65rem}
+#ATCConfigPage .atc-choice-row{display:flex;gap:.7rem;align-items:flex-start;padding:.85rem;cursor:pointer;white-space:normal;overflow-wrap:anywhere;border-top:1px solid var(--atc-line)}
+#ATCConfigPage .atc-choice-row input{flex:none;margin-top:.25rem;width:1.1rem;height:1.1rem}
+#ATCConfigPage .atc-choice-row:hover{background:var(--atc-panel)}
+#ATCConfigPage .atc-choice-row.atc-selected{background:var(--atc-selected);box-shadow:inset 3px 0 var(--atc-accent)}
+#ATCConfigPage .atc-choice-text{min-width:0;display:block;overflow-wrap:anywhere;font-size:.88rem;flex:1}
+#ATCConfigPage .atc-choice-detail{display:block;font-size:.8rem;opacity:.75;margin-top:.25rem;line-height:1.6}
+#ATCConfigPage .atc-device-group{border-bottom:1px solid var(--atc-line)}
+#ATCConfigPage .atc-group-heading{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem .85rem;background:var(--atc-panel);font-size:.8rem;overflow-wrap:anywhere}
+#ATCConfigPage .atc-older>summary{padding:.6rem .85rem;cursor:pointer;font-size:.8rem;opacity:.8}
+#ATCConfigPage .atc-technical{padding:.35rem .85rem .65rem;font-size:.75rem;opacity:.7;overflow-wrap:anywhere}
+#ATCConfigPage .atc-technical>summary{cursor:pointer}#ATCConfigPage .atc-technical code{white-space:normal;overflow-wrap:anywhere}
+#ATCConfigPage .atc-warning,#ATCConfigPage .atc-field-error,#ATCConfigPage .atc-suggestion{border-inline-start:3px solid #ba8732;background:var(--atc-panel);padding:.7rem .9rem;margin:.7rem 0;font-size:.85rem;overflow-wrap:anywhere}
+#ATCConfigPage .atc-field-error{border-color:#cf5e5e}#ATCConfigPage .atc-invalid{outline:2px solid #cf5e5e;outline-offset:2px}
+#ATCConfigPage .atc-note{white-space:pre-line;overflow-wrap:anywhere;font-size:.85rem;margin:.7rem 0;line-height:1.5}
+#ATCConfigPage .atc-status{border:1px solid var(--atc-line);border-radius:.5rem;padding:.6rem .85rem;margin:.8rem 0;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font-size:.82rem}
+#ATCConfigPage .atc-dirty{font-weight:600;color:inherit}
+#ATCConfigPage .atc-empty{border:1px dashed var(--atc-line);border-radius:.85rem;padding:2.5rem;text-align:center;grid-column:1/-1}
+#ATCConfigPage .atc-empty .atc-icon{width:2rem;height:2rem;opacity:.5;margin-bottom:.6rem}
+#ATCConfigPage .atc-mini-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.8rem;margin:.8rem 0}
+#ATCConfigPage .atc-mini-stats strong{display:block;font-size:1.3rem;font-variant-numeric:tabular-nums}
+#ATCConfigPage .atc-mini-stats span{font-size:.78rem;opacity:.7}
+#ATCConfigPage .atc-footer{border-top:1px solid var(--atc-line);padding-top:1.2rem;margin-top:1.5rem}
+#ATCConfigPage .atc-checkline{display:flex;align-items:flex-start;gap:.6rem;font-size:.9rem;margin:.8rem 0;cursor:pointer}
+#ATCConfigPage .atc-checkline input{margin-top:.3rem;flex:none}
+@media(max-width:620px){#ATCConfigPage .content-primary{padding:1rem .7rem}#ATCConfigPage .atc-header-controls{width:100%;justify-content:space-between}#ATCConfigPage .atc-stat{padding:.75rem}#ATCConfigPage .atc-stat strong{font-size:1.4rem}#ATCConfigPage .atc-stat .atc-icon{display:none}#ATCConfigPage .atc-stats{gap:.5rem}#ATCConfigPage .atc-three{grid-template-columns:1fr}#ATCConfigPage .atc-icon-tile{width:2.7rem;height:2.7rem}#ATCConfigPage .atc-tabs button{flex:1}#ATCConfigPage .atc-card{padding:1rem}#ATCConfigPage .atc-scopes{grid-template-columns:1fr;gap:.1rem}#ATCConfigPage .atc-scopes dd{margin-bottom:.35rem}}
+@media(prefers-reduced-motion:reduce){#ATCConfigPage *,#ATCConfigPage *:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
-<div data-role="content"><div class="content-primary">
-<form id="ATCForm">
-<h2>Audio Transcoding Control</h2>
-<p class="fieldDescription" data-t="intro">Experimental AC3 policies. The first enabled matching rule wins. No rule combination.</p>
-<div class="selectContainer"><label class="selectLabel" for="atcLanguage" data-t="language">Page language</label><select is="emby-select" id="atcLanguage"><option value="en">English</option><option value="de">Deutsch</option></select></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcMaster" disabled><span data-t="master">Enable audio policies</span></label></div>
-<p id="atcStatus" role="status" aria-live="polite" class="atc-note">Initializing plugin interface…</p>
-<h3 data-t="rules">Ordered rules</h3>
-<div class="atc-toolbar"><button is="emby-button" type="button" class="raised" id="atcAdd" disabled><span data-t="add">Add rule</span></button><button is="emby-button" type="button" class="raised" id="atcReload"><span data-t="reload">Reload</span></button></div>
-<div id="atcRules"></div>
-<div id="atcWarnings" role="status" aria-live="polite"></div>
-<fieldset id="atcEditor" hidden disabled><legend data-t="edit">Edit rule</legend>
-<div class="inputContainer"><label class="inputLabel" for="atcName" data-t="name">Rule name</label><input is="emby-input" id="atcName" type="text" maxlength="80"></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcEnabled"><span data-t="enabled">Rule enabled</span></label></div>
-<div class="atc-grid">
-<div><h4 data-t="devices">Devices</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllDevices"><span data-t="allDevices">All devices (explicit)</span></label></div><label for="atcDevices" class="fieldDescription" data-t="deviceHelp">Choose one or more devices. Empty selection never means all.</label><div class="inputContainer"><label for="atcDeviceSearch" data-t="searchDevices">Search devices</label><input is="emby-input" type="search" id="atcDeviceSearch" autocomplete="off"></div><p id="atcDeviceCount" aria-live="polite"></p><div id="atcDevices" class="atc-picks" role="group" aria-label="Devices" tabindex="-1"></div></div>
-<div><h4 data-t="users">Users</h4><div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcAllUsers"><span data-t="allUsers">All users (explicit)</span></label></div><label for="atcUsers" class="fieldDescription" data-t="userHelp">Choose one or more users. Device AND user must match.</label><div class="inputContainer"><label for="atcUserSearch" data-t="searchUsers">Search users</label><input is="emby-input" type="search" id="atcUserSearch" autocomplete="off"></div><p id="atcUserCount" aria-live="polite"></p><div id="atcUsers" class="atc-picks" role="group" aria-label="Users" tabindex="-1"></div></div>
-</div>
-<div class="atc-grid">
-<div class="selectContainer"><label class="selectLabel" for="atcCodec" data-t="codec">Target codec</label><select is="emby-select" id="atcCodec"><option value="ac3">AC3 (Dolby Digital)</option></select></div>
-<div class="selectContainer"><label class="selectLabel" for="atcChannels" data-t="channels">Maximum audio channels</label><select is="emby-select" id="atcChannels"><option value="1">1 (Mono)</option><option value="2">2 (Stereo)</option><option value="6">6 (5.1)</option></select></div>
-<div class="selectContainer"><label class="selectLabel" for="atcBitrate" data-t="bitrate">Maximum audio bitrate (bit/s)</label><select is="emby-select" id="atcBitrate"></select></div>
-</div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcPreserve"><span data-t="preserve">Preserve compatible AC3 audio (allow native direct play/copy)</span></label></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcStereo"><span data-t="stereo">Preserve mono/stereo sources unchanged</span></label></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcRuleDiagnostics"><span data-t="ruleDiagnostics">Enable detailed diagnostics for this rule</span></label></div>
-<p class="fieldDescription" data-t="policyNote">Existing video limits and permissions remain authoritative. Turning off AC3 preservation can force audio re-encoding. AC3 does not retain Atmos.</p>
-</fieldset>
-<fieldset id="atcLogging" disabled><legend data-t="logging">Diagnostics &amp; Logging</legend>
-<div class="selectContainer"><label class="selectLabel" for="atcLogLevel" data-t="level">Plugin logging level</label><select is="emby-select" id="atcLogLevel"><option>Error</option><option>Warning</option><option>Information</option><option>Debug</option><option>Trace</option></select></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogMatching"><span data-t="matching">Detailed rule matching</span></label></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogProfiles"><span data-t="profiles">Device profile changes</span></label></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogResponse"><span data-t="response">Playback response analysis (read-only)</span></label></div>
-<div class="checkboxContainer"><label><input is="emby-checkbox" type="checkbox" id="atcLogPerformance"><span data-t="performance">Performance measurements</span></label></div>
-<button is="emby-button" type="button" class="raised" id="atcDebugPreset"><span data-t="debugPreset">Use development Debug preset</span></button>
-<p class="fieldDescription atc-note" data-t="loggingNote">Logs: Jellyfin Dashboard → Logs, in the server's configured log directory. Changes apply to the next request without a restart. If the server filters Debug/Trace, these diagnostics use native Information entries labeled with their original level. Stricter global filters can still suppress messages; no global logging file is changed.</p>
-<p class="fieldDescription" data-t="privacy">No tokens, full stream URLs, media paths or raw device/user identifiers are logged. Stream offers do not prove client use or actual FFmpeg output.</p>
-</fieldset>
-<button is="emby-button" type="submit" class="raised button-submit block" id="atcSave" disabled><span data-t="save">Save configuration</span></button>
-<details><summary data-t="diagnosticReport">Sanitized interface diagnostics</summary>
-<p class="fieldDescription" data-t="diagnosticHelp">No credentials, identities or HTTP payloads. Copy this report when reporting an interface failure.</p>
-<p>UI <span id="atcUiVersion">0.2.3.0</span></p>
-<textarea id="atcReport" readonly rows="10" style="width:100%;box-sizing:border-box" aria-label="Sanitized interface diagnostics"></textarea>
-<button is="emby-button" type="button" class="raised" id="atcCopyReport"><span data-t="copyReport">Copy report</span></button>
-</details></form>
-</div></div>
+<svg width="0" height="0" aria-hidden="true"><defs><symbol id="atcAudioIcon" viewBox="0 0 24 24"><path d="M4 10v4m4-8v12m4-16v20m4-16v12m4-8v4"/></symbol><symbol id="atcRulesIcon" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M3 6h1m-1 6h1m-1 6h1"/></symbol><symbol id="atcDeviceIcon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></symbol></defs></svg>
+<div data-role="content"><div class="content-primary"><form id="ATCForm">
+<header class="atc-header"><div class="atc-brand"><div class="atc-icon-tile"><svg class="atc-icon" aria-hidden="true"><use href="#atcAudioIcon"/></svg></div><div><h1>Audio Transcoding Control</h1><p class="atc-subtitle" data-t="dashboardIntro">Audio output rules for your devices and users.</p><span class="atc-version">v0.2.4.0 <span data-t="experimental">Experimental</span></span></div></div><div class="atc-header-controls"><label class="atc-language"><span class="atc-muted" data-t="language">Language</span><select id="atcLanguage" aria-label="Page language"><option value="en">English</option><option value="de">Deutsch</option></select></label><label class="atc-switch"><input type="checkbox" role="switch" id="atcMaster" disabled><span class="atc-switch-track" aria-hidden="true"></span><span><span data-t="master">Enable audio policies</span><br><span class="atc-muted" id="atcMasterState"></span></span></label></div></header>
+<div class="atc-status"><span id="atcStatus" role="status" aria-live="polite">Initializing plugin interface…</span><span id="atcDirty" class="atc-dirty" aria-live="polite" hidden data-t="unsaved">Unsaved changes</span></div>
+<nav class="atc-tabs" role="tablist" aria-label="Plugin settings"><button id="atcRulesTab" type="button" role="tab" aria-selected="true" aria-controls="atcRulesView" data-t="audioRules">Audio rules</button><button id="atcDiagnosticsTab" type="button" role="tab" aria-selected="false" aria-controls="atcDiagnosticsView" tabindex="-1" data-t="diagnosticsTab">Diagnostics</button></nav>
+<section id="atcRulesView" role="tabpanel" aria-labelledby="atcRulesTab">
+<div class="atc-stats"><div class="atc-stat"><div><strong id="atcStatRules">0</strong><span class="atc-muted" data-t="configuredRules">Configured rules</span></div><svg class="atc-icon" aria-hidden="true"><use href="#atcRulesIcon"/></svg></div><div class="atc-stat"><div><strong id="atcStatEnabled">0</strong><span class="atc-muted" data-t="enabledRules">Enabled rules</span></div><svg class="atc-icon" aria-hidden="true"><use href="#atcAudioIcon"/></svg></div><div class="atc-stat"><div><strong id="atcStatDevices">0</strong><span class="atc-muted" data-t="registrations">Device registrations</span></div><svg class="atc-icon" aria-hidden="true"><use href="#atcDeviceIcon"/></svg></div></div>
+<div class="atc-heading"><div><h2 data-t="audioRules">Audio rules</h2><p class="atc-muted" data-t="priorityHelp">The first enabled matching rule applies.</p></div><button class="atc-button atc-primary" type="button" id="atcAdd" disabled><span aria-hidden="true">+</span><span data-t="add">Add rule</span></button></div>
+<div id="atcRules" class="atc-rule-grid"></div><div id="atcWarnings" role="status" aria-live="polite"></div>
+<details id="atcEditorPanel" class="atc-disclosure" hidden><summary><span data-t="edit">Edit rule</span> <span class="atc-muted" id="atcEditorTitle"></span></summary><div class="atc-disclosure-content"><fieldset id="atcEditor" hidden disabled>
+<div class="atc-grid"><div class="atc-field"><label for="atcName" data-t="name">Rule name</label><input id="atcName" type="text" maxlength="80" autocomplete="off"></div><label class="atc-switch"><input type="checkbox" role="switch" id="atcEnabled"><span class="atc-switch-track" aria-hidden="true"></span><span data-t="enabled">Rule enabled</span></label></div>
+<section class="atc-editor-section"><h3 data-t="applyTo">1. Apply this rule to</h3><div class="atc-grid">
+<div><h4 data-t="devices">Devices</h4><div class="atc-scope-choice"><label><input type="radio" name="atcDeviceScope" id="atcAllDevices" value="all"><span data-t="allDevices">All devices</span></label><label><input type="radio" name="atcDeviceScope" id="atcSelectedDevices" value="selected" checked><span data-t="selectedDevices">Selected devices</span></label></div><p class="atc-muted" id="atcDeviceCount" aria-live="polite"></p><div id="atcDeviceSelection"><div class="atc-field"><label for="atcDeviceSearch" data-t="searchDevices">Search all registrations</label><input type="search" id="atcDeviceSearch" autocomplete="off"></div><div class="atc-field"><label for="atcActivityFilter" data-t="activityFilter">Show activity</label><select id="atcActivityFilter"><option value="30">30 days</option><option value="60">60 days</option><option value="90" selected>90 days</option><option value="180">180 days</option><option value="365">365 days</option><option value="0">All time</option></select></div><p class="atc-muted" data-t="filterHelp">Selected and unknown-activity registrations stay visible. Search includes older registrations.</p><div id="atcDevices" class="atc-picks" role="group" aria-label="Device registrations" tabindex="-1"></div><div id="atcReassignments"></div></div></div>
+<div><h4 data-t="users">Users</h4><div class="atc-scope-choice"><label><input type="radio" name="atcUserScope" id="atcAllUsers" value="all"><span data-t="allUsers">All users</span></label><label><input type="radio" name="atcUserScope" id="atcSelectedUsers" value="selected" checked><span data-t="selectedUsers">Selected users</span></label></div><p class="atc-muted" id="atcUserCount" aria-live="polite"></p><div id="atcUserSelection"><div class="atc-field"><label for="atcUserSearch" data-t="searchUsers">Search users</label><input type="search" id="atcUserSearch" autocomplete="off"></div><div id="atcUsers" class="atc-picks" role="group" aria-label="Users" tabindex="-1"></div></div></div>
+</div></section>
+<section class="atc-editor-section"><h3 data-t="audioOutput">2. Audio output</h3><div class="atc-grid atc-three"><div class="atc-field"><label for="atcCodec" data-t="codec">Target audio format</label><select id="atcCodec"><option value="ac3">Dolby Digital (AC3)</option></select></div><div class="atc-field"><label for="atcChannels" data-t="channels">Maximum channels</label><select id="atcChannels"><option value="1">1 · Mono</option><option value="2">2 · Stereo</option><option value="6">6 · 5.1</option></select></div><div class="atc-field"><label for="atcBitrate" data-t="bitrate">Maximum bitrate (kbit/s)</label><select id="atcBitrate"></select></div></div></section>
+<section class="atc-editor-section"><h3 data-t="audioPreservation">3. Audio preservation</h3><label class="atc-checkline"><input type="checkbox" id="atcPreserve"><span data-t="preserve">Keep compatible Dolby Digital audio</span></label><label class="atc-checkline"><input type="checkbox" id="atcStereo"><span data-t="stereo">Keep mono and stereo audio unchanged</span></label><p class="atc-muted" data-t="policyNote">AC3 does not preserve Atmos. Video settings and native playback permissions remain unchanged.</p></section>
+<details class="atc-disclosure"><summary data-t="advancedRule">4. Advanced options</summary><div class="atc-disclosure-content"><label class="atc-checkline"><input type="checkbox" id="atcRuleDiagnostics"><span data-t="ruleDiagnostics">Detailed rule diagnostics</span></label><p class="atc-muted"><span data-t="ruleReference">Internal rule reference</span>: <span id="atcRuleReference"></span></p></div></details>
+</fieldset></div></details>
+<details class="atc-disclosure"><summary data-t="deviceOverview">Device registration overview</summary><div class="atc-disclosure-content"><div id="atcDeviceStats" class="atc-mini-stats"></div><p class="atc-muted" data-t="groupHelp">Name groups organize registrations only. Every device ID remains independent.</p><p class="atc-muted" data-t="connectionHelp">Connected means an active, controllable Jellyfin session. Recent activity alone does not prove a live connection.</p><a class="atc-button" href="#/dashboard/devices" data-t="manageDevices">Open Jellyfin device management</a></div></details>
+</section>
+<section id="atcDiagnosticsView" role="tabpanel" aria-labelledby="atcDiagnosticsTab" hidden>
+<div class="atc-heading"><div><h2 data-t="diagnosticsTab">Diagnostics</h2><p class="atc-muted" data-t="diagnosticsIntro">Inspect policy decisions and collect a sanitized report.</p></div></div>
+<div class="atc-stats"><div class="atc-stat"><div><strong id="atcServerVersion">—</strong><span class="atc-muted" data-t="serverVersion">Server plugin version</span></div></div><div class="atc-stat"><div><strong id="atcUiVersion">0.2.4.0</strong><span class="atc-muted" data-t="uiVersionLabel">UI version</span></div></div><div class="atc-stat"><div><strong id="atcSchema">—</strong><span class="atc-muted" data-t="schemaLabel">Configuration schema</span></div></div></div>
+<fieldset id="atcLogging" disabled><div class="atc-grid"><div class="atc-field"><label for="atcLogLevel" data-t="level">Logging level</label><select id="atcLogLevel"><option>Error</option><option>Warning</option><option>Information</option><option>Debug</option><option>Trace</option></select></div><div class="atc-toolbar"><button type="button" class="atc-button" id="atcDebugPreset" data-t="debugPreset">Development Debug preset</button></div></div>
+<details class="atc-disclosure"><summary data-t="advancedDiagnostics">Advanced diagnostics</summary><div class="atc-disclosure-content"><label class="atc-checkline"><input type="checkbox" id="atcLogMatching"><span data-t="matching">Detailed rule matching</span></label><label class="atc-checkline"><input type="checkbox" id="atcLogProfiles"><span data-t="profiles">Device profile changes</span></label><label class="atc-checkline"><input type="checkbox" id="atcLogResponse"><span data-t="response">Read-only playback response analysis</span></label><label class="atc-checkline"><input type="checkbox" id="atcLogPerformance"><span data-t="performance">Performance measurements</span></label><p class="atc-muted" data-t="loggingNote"></p></div></details></fieldset>
+<p class="atc-muted" data-t="privacy">Diagnostics exclude credentials, full URLs and raw device/user identifiers.</p><div class="atc-toolbar"><button type="button" class="atc-button" id="atcCopyReport" data-t="copyReport">Copy interface report</button></div><details class="atc-disclosure" id="atcReportPanel"><summary data-t="diagnosticReport">Sanitized interface diagnostics</summary><div class="atc-disclosure-content"><p class="atc-muted" data-t="diagnosticHelp"></p><textarea id="atcReport" readonly rows="12" aria-label="Sanitized interface diagnostics"></textarea></div></details>
+</section>
+<footer class="atc-footer"><span class="atc-muted" data-t="saveHelp">Changes apply to the next relevant playback request.</span><div class="atc-toolbar"><button class="atc-button" type="button" id="atcReload" data-t="reload">Reload</button><button class="atc-button atc-primary" type="submit" id="atcSave" disabled data-t="save">Save configuration</button></div></footer>
+</form></div></div>
 <script>
 (function () {
     'use strict';
-    const uiVersion = '0.2.3.0';
+    const uiVersion = '0.2.4.0';
     const candidates = document.querySelectorAll('#ATCConfigPage');
     const page = document.currentScript && document.currentScript.closest('#ATCConfigPage') || candidates[candidates.length - 1];
     if (!page) { console.error('[ATC:UI] interface: missing page root; version=' + uiVersion); return; }
@@ -86,10 +148,15 @@
     Object.assign(words.de, {saveRetry:'Deine Änderungen bleiben erhalten. Speichern erneut versuchen oder mit Neu laden verwerfen.', configurationError:'Konfiguration konnte nicht geladen werden.', devicesError:'Geräteliste konnte nicht geladen werden.', usersError:'Benutzerliste konnte nicht geladen werden.', saveError:'Konfiguration konnte nicht gespeichert werden.', interfaceError:'Plugin-Oberfläche konnte nicht initialisiert werden.', retry:'Mit Neu laden erneut versuchen. Bearbeiten und Speichern bleiben bis zum vollständigen Laden gesperrt.', loading:'Konfiguration, Geräte und Benutzer werden geladen…', saving:'Konfiguration wird gespeichert…', ready:'Konfiguration, Geräte und Benutzer geladen.', httpError:'HTTP-Status', unavailableStatus:'HTTP-Status nicht verfügbar', inspectReport:'Details stehen unten im bereinigten Diagnosebericht.', diagnosticReport:'Bereinigte Oberflächendiagnose', diagnosticHelp:'Keine Zugangsdaten, Kennungen oder HTTP-Inhalte. Diesen Bericht bei Problemen mit der Oberfläche kopieren.', copyReport:'Bericht kopieren', copied:'Bereinigter Bericht kopiert.', selectReport:'Bericht markiert. Mit der Kopierfunktion des Browsers kopieren.'});
     Object.assign(words.en,{searchDevices:'Search devices',searchUsers:'Search users',selectedCount:'selected',availableCount:'available',allActive:'All is active; explicit selections are retained',lastActivity:'Last activity',reference:'Reference',selectionEmpty:'No available entries',ruleLabel:'Rule',validationSummary:'Check the highlighted fields.', 'rule-id-missing':'Internal rule ID is missing or invalid. Create a new rule.', 'rule-id-duplicate':'Internal rule ID is duplicated. Duplicate the rule using the interface.', 'rule-name-required':'Enter a rule name.', 'rule-name-too-long':'Use at most 80 characters.', 'target-codec-unsupported':'AC3 is the only supported target codec.', 'audio-channels-invalid':'Choose 1, 2 or 6 channels.', 'audio-bitrate-invalid':'Choose a supported AC3 bitrate.', 'devices-too-many':'Choose at most 256 devices.', 'users-too-many':'Choose at most 256 users.', 'device-id-invalid':'A saved device selection is invalid. Correct the selection.', 'user-id-invalid':'A saved user selection is invalid. Correct the selection.', 'device-selection-required':'Select at least one device or explicitly enable All devices.', 'user-selection-required':'Select at least one user or explicitly enable All users.', 'rules-too-many':'At most 64 rules are supported.', 'logging-level-invalid':'Select a supported logging level.'});
     Object.assign(words.de,{searchDevices:'Geräte suchen',searchUsers:'Benutzer suchen',selectedCount:'ausgewählt',availableCount:'verfügbar',allActive:'Alle ist aktiv; explizite Auswahlen bleiben erhalten',lastActivity:'Letzte Aktivität',reference:'Referenz',selectionEmpty:'Keine verfügbaren Einträge',ruleLabel:'Regel',validationSummary:'Bitte die hervorgehobenen Felder prüfen.', 'rule-id-missing':'Die interne Regel-ID fehlt oder ist ungültig. Eine neue Regel anlegen.', 'rule-id-duplicate':'Die interne Regel-ID ist doppelt. Die Regel über die Oberfläche duplizieren.', 'rule-name-required':'Einen Regelnamen eingeben.', 'rule-name-too-long':'Höchstens 80 Zeichen verwenden.', 'target-codec-unsupported':'Als Zielcodec wird ausschließlich AC3 unterstützt.', 'audio-channels-invalid':'1, 2 oder 6 Kanäle wählen.', 'audio-bitrate-invalid':'Eine unterstützte AC3-Bitrate wählen.', 'devices-too-many':'Höchstens 256 Geräte wählen.', 'users-too-many':'Höchstens 256 Benutzer wählen.', 'device-id-invalid':'Eine gespeicherte Geräteauswahl ist ungültig. Die Auswahl korrigieren.', 'user-id-invalid':'Eine gespeicherte Benutzerauswahl ist ungültig. Die Auswahl korrigieren.', 'device-selection-required':'Mindestens ein Gerät wählen oder Alle Geräte ausdrücklich aktivieren.', 'user-selection-required':'Mindestens einen Benutzer wählen oder Alle Benutzer ausdrücklich aktivieren.', 'rules-too-many':'Höchstens 64 Regeln sind zulässig.', 'logging-level-invalid':'Eine unterstützte Protokollstufe wählen.'});
+
+    Object.assign(words.en,{saved:'Configuration saved.',dashboardIntro:'Audio output rules for your devices and users.',experimental:'Experimental',audioRules:'Audio rules',diagnosticsTab:'Diagnostics',configuredRules:'Configured rules',enabledRules:'Enabled rules',registrations:'Device registrations',priorityHelp:'The first enabled matching rule applies.',unsaved:'Unsaved changes',savedState:'All changes saved',applyTo:'1. Apply this rule to',audioOutput:'2. Audio output',audioPreservation:'3. Audio preservation',advancedRule:'4. Advanced options',selectedDevices:'Selected devices',selectedUsers:'Selected users',allDevices:'All devices',allUsers:'All users',codec:'Target audio format',channels:'Maximum channels',bitrate:'Maximum bitrate (kbit/s)',preserve:'Keep compatible Dolby Digital audio',stereo:'Keep mono and stereo audio unchanged',policyNote:'AC3 does not preserve Atmos. Video settings and native playback permissions remain unchanged.',ruleReference:'Internal rule reference',activityFilter:'Show activity',filterHelp:'Selected and unknown-activity registrations stay visible. Search includes older registrations.',deviceOverview:'Device registration overview',groupHelp:'Name groups organize registrations only. Every device ID remains independent.',connectionHelp:'Connected means an active, controllable Jellyfin session. Recent activity alone does not prove a live connection.',manageDevices:'Open Jellyfin device management',diagnosticsIntro:'Inspect policy decisions and collect a sanitized report.',serverVersion:'Server plugin version',uiVersionLabel:'UI version',schemaLabel:'Configuration schema',advancedDiagnostics:'Advanced diagnostics',saveHelp:'Changes apply to the next relevant playback request.',emptyTitle:'No audio rules yet',emptyHelp:'Add a rule, choose its devices and users, then enable it when ready.',moreActions:'More rule actions',targetSummary:'Dolby Digital',deviceScope:'Devices',userScope:'Users',noneSelected:'None selected',allScope:'All — stored selections are inactive',olderRegistrations:'Older registrations',registrationCount:'registrations',newestRegistration:'Newest registration',unknownActivity:'Activity unknown',connected:'Connected (Jellyfin)',activeSession:'Active session',noActiveSession:'No active session reported',connectionUnknown:'Connection unknown',recentDevices:'Recently used',inactiveDevices:'Inactive registrations',deviceGroups:'Device name groups',selectedDeviceIds:'Stored device IDs · this rule',unknownDevices:'Unknown activity',connectedDevices:'Connected sessions',days:'days',allTime:'All time',technicalDetails:'Registration details',originalName:'Original device name',lastUser:'Last user',possibleReplacement:'Possible replacement registration',replacementHelp:'Same name and client, newer activity. This is a suggestion, not proof that both registrations are the same device.',replaceAssignment:'Replace previous assignment',keepBoth:'Keep both device IDs',dismiss:'Dismiss suggestion',replaceConfirm:'Replace only this older device assignment with the suggested newer registration? Review the displayed name, client and dates first. This changes the unsaved rule only.',keepBothConfirm:'Add the suggested registration and keep the older device ID? Both IDs will match this rule after you save.',missingCount:'missing registration(s)',unknownVersion:'Unknown',ruleDiagnostics:'Detailed rule diagnostics',debugPreset:'Development Debug preset',copyReport:'Copy interface report',searchDevices:'Search all registrations',language:'Language',level:'Logging level'});
+    Object.assign(words.de,{saved:'Konfiguration gespeichert.',dashboardIntro:'Audioausgabe für deine Geräte und Benutzer steuern.',experimental:'Experimentell',audioRules:'Audioregeln',diagnosticsTab:'Diagnose',configuredRules:'Konfigurierte Regeln',enabledRules:'Aktivierte Regeln',registrations:'Geräteregistrierungen',priorityHelp:'Die erste aktivierte passende Regel wird angewendet.',unsaved:'Ungespeicherte Änderungen',savedState:'Alle Änderungen gespeichert',applyTo:'1. Diese Regel anwenden auf',audioOutput:'2. Audioausgabe',audioPreservation:'3. Originalton erhalten',advancedRule:'4. Erweiterte Optionen',selectedDevices:'Ausgewählte Geräte',selectedUsers:'Ausgewählte Benutzer',allDevices:'Alle Geräte',allUsers:'Alle Benutzer',codec:'Audio-Zielformat',channels:'Maximale Kanalanzahl',bitrate:'Maximale Bitrate (kbit/s)',preserve:'Kompatiblen Dolby-Digital-Ton erhalten',stereo:'Mono- und Stereoton unverändert erhalten',policyNote:'AC3 erhält kein Atmos. Videoeinstellungen und native Wiedergaberechte bleiben unverändert.',ruleReference:'Interne Regelreferenz',activityFilter:'Aktivitätszeitraum',filterHelp:'Ausgewählte Registrierungen und solche mit unbekannter Aktivität bleiben sichtbar. Die Suche findet auch ältere Registrierungen.',deviceOverview:'Übersicht der Geräteregistrierungen',groupHelp:'Namensgruppen dienen nur der Übersicht. Jede Geräte-ID bleibt unabhängig.',connectionHelp:'Verbunden bedeutet eine aktive, steuerbare Jellyfin-Sitzung. Letzte Aktivität allein belegt keine aktuelle Verbindung.',manageDevices:'Jellyfin-Geräteverwaltung öffnen',diagnosticsIntro:'Regelentscheidungen prüfen und einen bereinigten Bericht kopieren.',serverVersion:'Plugin-Version des Servers',uiVersionLabel:'UI-Version',schemaLabel:'Konfigurationsschema',advancedDiagnostics:'Erweiterte Diagnose',saveHelp:'Änderungen gelten ab der nächsten relevanten Wiedergabeanfrage.',emptyTitle:'Noch keine Audioregeln',emptyHelp:'Eine Regel hinzufügen, Geräte und Benutzer auswählen und bei Bedarf aktivieren.',moreActions:'Weitere Regelaktionen',targetSummary:'Dolby Digital',deviceScope:'Geräte',userScope:'Benutzer',noneSelected:'Keine ausgewählt',allScope:'Alle — gespeicherte Auswahlen sind inaktiv',olderRegistrations:'Ältere Registrierungen',registrationCount:'Registrierungen',newestRegistration:'Neueste Registrierung',unknownActivity:'Aktivität unbekannt',connected:'Verbunden (Jellyfin)',activeSession:'Aktive Sitzung',noActiveSession:'Keine aktive Sitzung gemeldet',connectionUnknown:'Verbindung unbekannt',recentDevices:'Kürzlich verwendet',inactiveDevices:'Inaktive Registrierungen',deviceGroups:'Gerätenamensgruppen',selectedDeviceIds:'Gespeicherte Geräte-IDs · diese Regel',unknownDevices:'Aktivität unbekannt',connectedDevices:'Verbundene Sitzungen',days:'Tage',allTime:'Gesamter Zeitraum',technicalDetails:'Registrierungsdetails',originalName:'Ursprünglicher Gerätename',lastUser:'Letzter Benutzer',possibleReplacement:'Mögliche Ersatzregistrierung',replacementHelp:'Gleicher Name und Client, neuere Aktivität. Dieser Vorschlag belegt nicht, dass beide Registrierungen dasselbe Gerät sind.',replaceAssignment:'Bisherige Zuordnung ersetzen',keepBoth:'Beide Geräte-IDs behalten',dismiss:'Vorschlag verwerfen',replaceConfirm:'Nur diese ältere Gerätezuordnung durch die vorgeschlagene neuere Registrierung ersetzen? Zuerst Name, Client und Zeitpunkte prüfen. Geändert wird nur die ungespeicherte Regel.',keepBothConfirm:'Die vorgeschlagene Registrierung ergänzen und die ältere Geräte-ID behalten? Nach dem Speichern gilt die Regel für beide IDs.',missingCount:'fehlende Registrierung(en)',unknownVersion:'Unbekannt',ruleDiagnostics:'Detaillierte Regeldiagnose',debugPreset:'Entwicklungsprofil Debug',copyReport:'Oberflächenbericht kopieren',searchDevices:'Alle Registrierungen suchen',language:'Sprache',level:'Protokollstufe'});
     let config, rules = [], selected = -1, devices = [], users = [], loaded = false, dirty = false, busy = false;
     let language = 'en', generation = 0, shown = false, disposed = false, sequence = 0, flushTimer = 0, forwarding = false, serverDiagnostics = true;
     let validationAttempted=false, validationErrors=[];
     let currentStatus = {key:'loading'}, sessionId;
+    let sessionsAvailable=false, serverVersion='unknown';
+    const dismissedReassignments=new Set();
     const listeners = [], records = [], pending = [], httpStatuses = {};
     const t = key => words[language][key] || words.en[key] || key;
     const userKey = value => String(value || '').replace(/-/g, '').toLowerCase();
@@ -101,7 +168,7 @@
         currentStatus = {key, errors};
         status(errors ? errors.map(e=>t(e.key)+' '+(typeof e.status==='number'?t('httpError')+' '+e.status:t('unavailableStatus'))+' ['+e.code+']').join('\n')+'\n'+t(key==='saveError'?'saveRetry':'retry')+' '+t('inspectReport') : t(key));
     }
-    function localize() { page.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); }); showStatus(currentStatus.key, currentStatus.errors); }
+    function localize() { page.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); }); find('atcActivityFilter').querySelectorAll('option').forEach(o=>o.textContent=o.value==='0'?t('allTime'):o.value+' '+t('days')); showStatus(currentStatus.key, currentStatus.errors); }
     function apiClient() {
         if (typeof ApiClient === 'undefined' || !ApiClient || !['ajax','getUrl','getPluginConfiguration','getUsers','updatePluginConfiguration'].every(name=>typeof ApiClient[name]==='function')) throw problem('api-unavailable');
         return ApiClient;
@@ -121,7 +188,7 @@
             const name=names.find(n=>new RegExp('(?:\\bat\\s+|\\b)'+n+'(?:\\s|@|\\()').test(line))||'external';
             return name+':'+(position?position[1]+':'+position[2]:'0:0');
         }):[];
-        const element=['ATCForm', 'atcLanguage', 'atcMaster', 'atcStatus', 'atcAdd', 'atcReload', 'atcRules', 'atcWarnings', 'atcEditor', 'atcName', 'atcEnabled', 'atcAllDevices', 'atcDevices', 'atcAllUsers', 'atcUsers', 'atcCodec', 'atcChannels', 'atcBitrate', 'atcPreserve', 'atcStereo', 'atcRuleDiagnostics', 'atcLogging', 'atcLogLevel', 'atcLogMatching', 'atcLogProfiles', 'atcLogResponse', 'atcLogPerformance', 'atcDebugPreset', 'atcSave', 'atcReport', 'atcCopyReport','atcDeviceSearch','atcUserSearch','atcDeviceCount','atcUserCount'].includes(error&&error.atcElement)?error.atcElement:'none';
+        const element=['atcAudioIcon', 'atcRulesIcon', 'atcDeviceIcon', 'ATCForm', 'atcLanguage', 'atcMaster', 'atcMasterState', 'atcStatus', 'atcDirty', 'atcRulesTab', 'atcDiagnosticsTab', 'atcRulesView', 'atcStatRules', 'atcStatEnabled', 'atcStatDevices', 'atcAdd', 'atcRules', 'atcWarnings', 'atcEditorPanel', 'atcEditorTitle', 'atcEditor', 'atcName', 'atcEnabled', 'atcAllDevices', 'atcSelectedDevices', 'atcDeviceCount', 'atcDeviceSelection', 'atcDeviceSearch', 'atcActivityFilter', 'atcDevices', 'atcReassignments', 'atcAllUsers', 'atcSelectedUsers', 'atcUserCount', 'atcUserSelection', 'atcUserSearch', 'atcUsers', 'atcCodec', 'atcChannels', 'atcBitrate', 'atcPreserve', 'atcStereo', 'atcRuleDiagnostics', 'atcRuleReference', 'atcDeviceStats', 'atcDiagnosticsView', 'atcServerVersion', 'atcUiVersion', 'atcSchema', 'atcLogging', 'atcLogLevel', 'atcDebugPreset', 'atcLogMatching', 'atcLogProfiles', 'atcLogResponse', 'atcLogPerformance', 'atcCopyReport', 'atcReportPanel', 'atcReport', 'atcReload', 'atcSave'].includes(error&&error.atcElement)?error.atcElement:'none';
         return {Kind:kind,Status:httpStatus,Code:code,Frames:frames,Element:element};
     }
     function diagnostic(event, step, fields) {
@@ -159,7 +226,7 @@
         const saveButton=page.querySelector('#atcSave');if(saveButton)saveButton.disabled=locked;
         const reload=page.querySelector('#atcReload');if(reload)reload.disabled=busy;
         page.setAttribute('aria-busy',String(busy));
-        if(loaded&&!busy)renderRules();else page.querySelectorAll('#atcRules button').forEach(b=>{b.disabled=true;});
+        if(loaded&&!busy){renderRules();suggestions();}else page.querySelectorAll('#atcRules button,#atcRules input').forEach(b=>{b.disabled=true;}); summary();
     }
     function normalize(value) {
         if(!value||typeof value!=='object'||Number(value.SchemaVersion)!==2)throw problem('invalid-schema');
@@ -201,8 +268,49 @@
         return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
     }
     function newRule() { return { Id:uuid(), Name:t('newRule')+' '+(rules.length+1), IsEnabled:false, DeviceIds:[], AllDevices:false, UserIds:[], AllUsers:false, TargetCodec:'ac3', MaxAudioChannels:6, MaxAudioBitrate:640000, PreserveCompatibleAudio:true, PreserveStereo:true, EnableDiagnostics:true }; }
-    function button(label, action, disabled) {
-        const el = document.createElement('button'); el.type = 'button'; el.setAttribute('is','emby-button'); el.className='raised emby-button'; el.textContent=label; el.disabled=!!disabled||!loaded||busy; el.dataset.atcAction=({'edit':'edit','moveUp':'move-up','moveDown':'move-down','duplicate':'duplicate-rule','remove':'delete','disabled':'disable','active':'enable'})[Object.keys(words[language]).find(key=>t(key)===label)]||'rule-action'; el.addEventListener('click',event=>{try{diagnostic('control','rule',{Code:el.dataset.atcAction});action(event);if(el.dataset.atcAction!=='edit')diagnostic('changed','rule',{Code:el.dataset.atcAction,Count:rules.length});}catch(error){fail('interface',error);}}); return el;
+
+    function node(tag,css,text) {const el=document.createElement(tag);if(css)el.className=css;if(text!==undefined)el.textContent=text;return el;}
+    function icon(name='atcAudioIcon') {const el=document.createElementNS('http://www.w3.org/2000/svg','svg');el.classList.add('atc-icon');el.setAttribute('aria-hidden','true');const use=document.createElementNS(el.namespaceURI,'use');use.setAttribute('href','#'+name);el.append(use);return el;}
+    function button(label,action,disabled=false,code='rule-action') {
+        const el=node('button','atc-button',label);el.type='button';el.setAttribute('aria-label',label);el.disabled=disabled||!loaded||busy;el.dataset.atcAction=code;
+        el.addEventListener('click',event=>{try{diagnostic('control','rule',{Code:code});action(event);const menu=el.closest('.atc-menu');if(menu)menu.open=false;summary();}catch(error){fail('interface',error);}});return el;
+    }
+    function view(name,focus=false) {
+        const diagnostics=name==='diagnostics';find('atcRulesView').hidden=diagnostics;find('atcDiagnosticsView').hidden=!diagnostics;
+        for(const [id,on] of [['atcRulesTab',!diagnostics],['atcDiagnosticsTab',diagnostics]]){const tab=find(id);tab.setAttribute('aria-selected',String(on));tab.tabIndex=on?0:-1;if(on&&focus)tab.focus();}
+    }
+    // ATC presentation helpers begin. Names/activity never become playback identity keys.
+    function activityTime(value) {const ms=Date.parse(value||'');return Number.isFinite(ms)&&ms>0?ms:null;}
+    function normalizedName(value) {return String(value||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('en');}
+    function deviceGroupKey(item) {return normalizedName(item.name)+'\u0000'+normalizedName(item.client);}
+    function groupDevices(items) {
+        const groups=new Map();for(const item of items){const key=deviceGroupKey(item);if(!groups.has(key))groups.set(key,{key,name:item.name,client:item.client,items:[]});groups.get(key).items.push(item);}
+        return [...groups.values()].map(g=>{g.items.sort((a,b)=>(activityTime(b.activity)||0)-(activityTime(a.activity)||0)||a.id.localeCompare(b.id));return g;}).sort((a,b)=>(activityTime(b.items[0].activity)||0)-(activityTime(a.items[0].activity)||0)||a.name.localeCompare(b.name));
+    }
+    function registrationVisible(item,selected,query,days,now=Date.now()) {
+        if(selected)return true;const search=normalizedName([item.name,item.originalName,item.client,item.version,...(item.userNames||[]),item.id].join(' '));
+        if(query)return search.includes(normalizedName(query));const ms=activityTime(item.activity);return !days||ms===null||ms>=now-days*86400000;
+    }
+    function deviceRegistrations(items,sessions,fallback='Device') {
+        const map=new Map();for(const d of items){if(!d||typeof d.Id!=='string'||!d.Id)continue;
+            const current={id:d.Id,name:d.CustomName||d.Name||fallback,originalName:d.Name||'',customName:d.CustomName||'',client:d.AppName||'',version:d.AppVersion||'',activity:d.DateLastActivity||null,userNames:typeof d.LastUserName==='string'&&d.LastUserName?[d.LastUserName]:[],lastUserId:typeof d.LastUserId==='string'?d.LastUserId:null,connected:sessions.some(s=>s.DeviceId===d.Id&&s.IsActive===true&&s.SupportsRemoteControl===true),active:sessions.some(s=>s.DeviceId===d.Id&&s.IsActive===true)};
+            const old=map.get(d.Id);if(old){const winner=(activityTime(current.activity)||0)>=(activityTime(old.activity)||0)?current:old;map.set(d.Id,Object.assign({},winner,{userNames:[...new Set([...old.userNames,...current.userNames])]}));}else map.set(d.Id,current);
+        }return [...map.values()];
+    }
+    // ATC presentation helpers end.
+    function scopeText(rule,isUser) {
+        const ids=isUser?rule.UserIds:rule.DeviceIds;if(isUser?rule.AllUsers:rule.AllDevices)return t('allScope');
+        if(!ids.length)return t('noneSelected');const known=isUser?users:devices;
+        const names=ids.map(id=>known.find(x=>isUser?userKey(x.id)===userKey(id):x.id===id)?.name||t(isUser?'unknownUser':'unknownDevice'));
+        return names.slice(0,2).join(', ')+(names.length>2?' +'+(names.length-2):'');
+    }
+    function summary() {
+        find('atcStatRules').textContent=String(rules.length);find('atcStatEnabled').textContent=String(rules.filter(r=>r.IsEnabled).length);find('atcStatDevices').textContent=String(devices.length);
+        find('atcDirty').hidden=!dirty;find('atcMasterState').textContent=t(find('atcMaster').checked?'active':'disabled');
+        find('atcSchema').textContent=config?String(config.SchemaVersion):'—';find('atcServerVersion').textContent=serverVersion==='unknown'?t('unknownVersion'):serverVersion;
+        const days=Number(find('atcActivityFilter').value)||90,cutoff=Date.now()-days*86400000;
+        const stats=[['registrations',devices.length],['recentDevices',devices.filter(d=>activityTime(d.activity)!==null&&activityTime(d.activity)>=cutoff).length],['deviceGroups',groupDevices(devices).length],['selectedDeviceIds',new Set(rules[selected]?.DeviceIds||[]).size],['inactiveDevices',devices.filter(d=>activityTime(d.activity)!==null&&activityTime(d.activity)<cutoff).length],['unknownDevices',devices.filter(d=>activityTime(d.activity)===null).length],['connectedDevices',devices.filter(d=>d.connected).length]];
+        find('atcDeviceStats').replaceChildren(...stats.map(([label,count])=>{const el=node('div');el.append(node('strong','',String(count)),node('span','',t(label)+(label==='recentDevices'?' · '+days+' '+t('days'):'')));return el;}));
     }
     function axisMatch(rule, value, deviceAxis) { return deviceAxis ? rule.AllDevices || rule.DeviceIds.includes(value) : rule.AllUsers || rule.UserIds.some(v => userKey(v) === value); }
     function nonempty(rule) { return (rule.AllDevices || rule.DeviceIds.length) && (rule.AllUsers || rule.UserIds.length); }
@@ -223,69 +331,97 @@
             const note=document.createElement('p'); note.className='atc-warning'; note.textContent=r.Name+': '+t(covers(earlier,r)?'shadow':'overlap'); root.append(note);
         });
     }
+
     function renderRules() {
-        const root=find('atcRules'); root.replaceChildren();
-        if (!rules.length) { const p=document.createElement('p'); p.textContent=t('empty'); root.append(p); }
+        const root=find('atcRules');root.replaceChildren();
+        if(!rules.length){const empty=node('div','atc-empty');empty.append(icon(),node('h3','',t('emptyTitle')),node('p','atc-muted',t('emptyHelp')));root.append(empty);}
         rules.forEach((r,index)=>{
-            const card=document.createElement('div'); card.className='atc-card'+(validationErrors.some(e=>e.index===index)?' atc-invalid':'');card.dataset.rulePosition=String(index); card.setAttribute('aria-current',String(index===selected));
-            const title=document.createElement('div'); title.className='atc-card-title'; title.textContent=(index+1)+'. '+r.Name+' — '+t(r.IsEnabled?'active':'disabled'); card.append(title);
-            const tools=document.createElement('div'); tools.className='atc-toolbar';
-            tools.append(button(t('edit'),()=>{ selected=index; renderEditor(); renderRules(); }),
-                button(t(r.IsEnabled?'disabled':'active'),()=>{r.IsEnabled=!r.IsEnabled; dirty=true; renderEditor(); renderRules();}),
-                button(t('moveUp'),()=>move(index,-1),index===0),button(t('moveDown'),()=>move(index,1),index===rules.length-1),
-                button(t('duplicate'),()=>{if(rules.length>=64){status(t('tooMany'));return;} const copy=JSON.parse(JSON.stringify(r));copy.Id=uuid();copy.Name=(r.Name+' copy').slice(0,80);copy.IsEnabled=false;rules.splice(index+1,0,copy);selected=index+1;dirty=true;renderEditor();renderRules();}),
-                button(t('remove'),()=>{if(window.confirm(t('removeConfirm'))){rules.splice(index,1);selected=Math.min(selected,rules.length-1);dirty=true;renderEditor();renderRules();}}));
-            card.append(tools); root.append(card);
-        });
-        find('atcAdd').disabled=!loaded||busy||rules.length>=64; warnings();
+            const card=node('article','atc-card'+(!r.IsEnabled?' atc-card-off':'')+(validationErrors.some(e=>e.index===index)?' atc-invalid':''));card.dataset.rulePosition=String(index);card.setAttribute('aria-current',String(index===selected));
+            const top=node('div','atc-card-top');top.append(node('span','atc-priority',String(index+1).padStart(2,'0')),node('h3','atc-card-title',r.Name));
+            const toggle=node('label','atc-switch'),input=node('input');input.type='checkbox';input.setAttribute('role','switch');input.checked=r.IsEnabled;input.disabled=!loaded||busy;input.setAttribute('aria-label',r.Name+' · '+t('enabled'));
+            toggle.append(input,node('span','atc-switch-track'),node('span','atc-muted',t(r.IsEnabled?'active':'disabled')));
+            input.addEventListener('change',()=>{if(!loaded||busy)return;r.IsEnabled=input.checked;dirty=true;renderEditor();renderRules();diagnostic('changed','rule',Object.assign({Code:input.checked?'enable':'disable'},ruleCounts(r,index)));});top.append(toggle);card.append(top);
+            const output=node('div','atc-output');output.append(icon(),node('strong','',t('targetSummary')),node('span','atc-chip','AC3'),node('span','atc-chip',r.MaxAudioChannels===6?'5.1':r.MaxAudioChannels===2?'Stereo':'Mono'),node('span','atc-chip',(r.MaxAudioBitrate/1000)+' kbit/s'));card.append(output);
+            const scopes=node('dl','atc-scopes');scopes.append(node('dt','',t('deviceScope')),node('dd','',scopeText(r,false)),node('dt','',t('userScope')),node('dd','',scopeText(r,true)));card.append(scopes);
+            const tools=node('div','atc-toolbar');tools.append(button(t('edit'),()=>{selected=index;renderEditor();renderRules();find('atcEditorPanel').open=true;view('rules');find('atcName').focus();},false,'edit'));
+            const menu=node('details','atc-menu'),label=node('summary','','•••');label.setAttribute('aria-label',t('moreActions')+' · '+r.Name);menu.append(label);const actions=node('div','atc-menu-items');
+            actions.append(button(t('moveUp'),()=>move(index,-1),index===0,'move-up'),button(t('moveDown'),()=>move(index,1),index===rules.length-1,'move-down'),
+                button(t('duplicate'),()=>{if(rules.length>=64)return;const copy=JSON.parse(JSON.stringify(r));copy.Id=uuid();copy.Name=(r.Name+' copy').slice(0,80);copy.IsEnabled=false;rules.splice(index+1,0,copy);selected=index+1;dirty=true;renderEditor();renderRules();find('atcEditorPanel').open=true;},rules.length>=64,'duplicate-rule'),
+                button(t('remove'),()=>{if(window.confirm(t('removeConfirm'))){rules.splice(index,1);selected=Math.min(selected,rules.length-1);dirty=true;renderEditor();renderRules();}},false,'delete'));
+            menu.append(actions);tools.append(menu);card.append(tools);root.append(card);
+        });find('atcAdd').disabled=!loaded||busy||rules.length>=64;warnings();summary();
     }
-    function move(index,delta) { const current=rules[selected];[rules[index],rules[index+delta]]=[rules[index+delta],rules[index]];selected=rules.indexOf(current);dirty=true;renderRules(); }
+    function move(index,delta) {if(index+delta<0||index+delta>=rules.length)return;const current=rules[selected];[rules[index],rules[index+delta]]=[rules[index+delta],rules[index]];selected=rules.indexOf(current);dirty=true;renderRules();}
     function filterPicks(id) {
-        const user=id==='atcUsers',query=find(user?'atcUserSearch':'atcDeviceSearch').value.toLocaleLowerCase().trim();
-        find(id).querySelectorAll('.atc-choice-row').forEach(row=>{row.hidden=!!query&&!row.dataset.search.includes(query);});
+        const isUser=id==='atcUsers',query=find(isUser?'atcUserSearch':'atcDeviceSearch').value,days=isUser?0:Number(find('atcActivityFilter').value);
+        const root=find(id);for(const holder of root.querySelectorAll('[data-atc-registration]')){const input=holder.querySelector('input');const item={name:holder.dataset.search,activity:holder.dataset.activity||null};holder.hidden=!registrationVisible(item,input.checked,query,days);}
+        for(const group of root.querySelectorAll('.atc-device-group')){const rows=[...group.querySelectorAll('[data-atc-registration]')];group.hidden=rows.every(r=>r.hidden);const older=group.querySelector('.atc-older');if(older){const oldRows=[...older.querySelectorAll('[data-atc-registration]')];older.hidden=oldRows.every(r=>r.hidden);if(oldRows.some(r=>!r.hidden&&(query||r.querySelector('input').checked)))older.open=true;}}
     }
     function selectionState(id) {
-        const user=id==='atcUsers',rule=rules[selected];if(!rule)return;
-        const root=find(id),values=user?rule.UserIds:rule.DeviceIds,all=user?rule.AllUsers:rule.AllDevices;
+        const isUser=id==='atcUsers',rule=rules[selected];if(!rule)return;const root=find(id),values=isUser?rule.UserIds:rule.DeviceIds,all=isUser?rule.AllUsers:rule.AllDevices;
         root.querySelectorAll('input[type=checkbox]').forEach(input=>{input.disabled=!!all;input.closest('label').classList.toggle('atc-selected',input.checked);});
-        find(user?'atcUserCount':'atcDeviceCount').textContent=values.length+' '+t('selectedCount')+' / '+(user?users:devices).length+' '+t('availableCount')+(all?' — '+t('allActive'):'');
-        filterPicks(id);
+        find(isUser?'atcUserSelection':'atcDeviceSelection').hidden=!!all;
+        const known=isUser?users:devices,missing=values.filter(v=>!known.some(k=>isUser?userKey(k.id)===userKey(v):k.id===v)).length;
+        find(isUser?'atcUserCount':'atcDeviceCount').textContent=(all?t('allScope')+' · ': '')+new Set(values).size+' '+t('selectedCount')+' / '+known.length+' '+t('availableCount')+(missing?' · '+missing+' '+t('missingCount'):'');filterPicks(id);
     }
-    function picks(id, known, values, isUser) {
-        const root=find(id);root.replaceChildren();const key=isUser?userKey:v=>v;
-        const selections=new Set(values.map(key));const entries=new Map(known.map(v=>[key(v.id),v]));
+    function picks(id,known,values,isUser) {
+        const root=find(id);root.replaceChildren();const key=isUser?userKey:v=>v,selections=new Set(values.map(key)),entries=new Map(known.map(v=>[key(v.id),v]));
         values.forEach(v=>{if(!entries.has(key(v)))entries.set(key(v),{id:v,name:t(isUser?'unknownUser':'unknownDevice'),missing:true});});
-        const items=Array.from(entries.values()).sort((a,b)=>Number(selections.has(key(b.id)))-Number(selections.has(key(a.id)))||a.name.localeCompare(b.name)||a.id.localeCompare(b.id));
-        if(!items.length){const empty=document.createElement('p');empty.textContent=t('selectionEmpty');root.append(empty);}
-        for(const item of items){
-            const row=document.createElement('label');row.className='atc-choice-row';
-            const input=document.createElement('input');input.type='checkbox';input.value=item.id;input.checked=selections.has(key(item.id));input.classList.add('atc-pick');
-            const text=document.createElement('span');text.className='atc-choice-text';const title=document.createElement('strong');title.textContent=item.name;text.append(title);
-            const details=[];if(item.client)details.push(item.client+(item.version?' '+item.version:''));
-            if(item.activity){const date=new Date(item.activity);if(!Number.isNaN(date.valueOf()))details.push(t('lastActivity')+': '+date.toLocaleString(language));}
-            details.push(t('reference')+': #'+(Array.from(entries.keys()).sort().indexOf(key(item.id))+1)+' · …'+item.id.slice(-6));if(item.missing)details.push(t(isUser?'unknownUser':'unknownDevice'));
-            const detail=document.createElement('span');detail.className='atc-choice-detail';detail.textContent=details.join(' · ');text.append(detail);
-            row.dataset.search=(item.name+' '+details.join(' ')).toLocaleLowerCase();row.append(input,text);root.append(row);
+        const refs=[...entries.keys()].sort();
+        function registration(item,distinguish=false){
+            const holder=node('div','atc-registration');holder.dataset.atcRegistration='true';holder.dataset.activity=item.activity||'';
+            const row=node('label','atc-choice-row'),input=node('input');input.type='checkbox';input.value=item.id;input.checked=selections.has(key(item.id));input.className='atc-pick';
+            const text=node('span','atc-choice-text');text.append(node('strong','',item.name));
+            const parts=[];if(item.client)parts.push(item.client+(item.version?' · '+item.version:''));
+            const ms=activityTime(item.activity);parts.push(ms===null?t('unknownActivity'):t('lastActivity')+': '+new Date(ms).toLocaleString(language));
+            if(item.userNames?.length)parts.push(t('lastUser')+': '+item.userNames.join(', '));
+            if(!isUser)parts.push(item.connected?t('connected'):item.active?t('activeSession'):sessionsAvailable?t('noActiveSession'):t('connectionUnknown'));
+            if(distinguish||item.missing)parts.push(t('reference')+' #'+(refs.indexOf(key(item.id))+1)+' · …'+item.id.slice(-6));
+            if(item.missing)parts.push(t(isUser?'unknownUser':'unknownDevice'));
+            text.append(node('span','atc-choice-detail',parts.join(' · ')));row.append(input,text);holder.append(row);
+            if(item.missing)row.classList.add('atc-warning');
+            if(!isUser){const tech=node('details','atc-technical');tech.append(node('summary','',t('technicalDetails')),node('code','',item.id));if(item.originalName&&item.originalName!==item.name)tech.append(node('p','',t('originalName')+': '+item.originalName));holder.append(tech);}
+            holder.dataset.search=normalizedName([item.name,item.originalName,item.client,item.version,...(item.userNames||[]),item.id].join(' '));return holder;
         }
-        selectionState(id);
+        if(isUser){for(const item of [...entries.values()].sort((a,b)=>a.name.localeCompare(b.name)))root.append(registration(item));}
+        else for(const group of groupDevices([...entries.values()])){
+            const box=node('section','atc-device-group'),head=node('div','atc-group-heading');head.append(node('strong','',group.name),node('span','',group.items.length+' '+t('registrationCount')));box.append(head,registration(group.items[0],group.items.length>1));
+            if(group.items.length>1){const older=node('details','atc-older');older.append(node('summary','',t('olderRegistrations')+' · '+(group.items.length-1)));group.items.slice(1).forEach(item=>older.append(registration(item,true)));box.append(older);}root.append(box);
+        }
+        if(!entries.size)root.append(node('p','atc-note',t('selectionEmpty')));selectionState(id);
     }
-    function selectedValues(id) {return Array.from(find(id).querySelectorAll('input[type=checkbox]:checked'),input=>input.value);}
+    function suggestions() {
+        const root=find('atcReassignments');root.replaceChildren();const r=rules[selected];if(!r||r.AllDevices)return;const cutoff=Date.now()-(Number(find('atcActivityFilter').value)||90)*86400000;
+        for(const group of groupDevices(devices)){
+            const newest=group.items[0];if(r.DeviceIds.includes(newest.id)||activityTime(newest.activity)===null||activityTime(newest.activity)<cutoff)continue;
+            for(const old of group.items.slice(1).filter(d=>r.DeviceIds.includes(d.id)&&activityTime(d.activity)!==null&&activityTime(d.activity)<cutoff)){
+                const key=r.Id+'|'+old.id+'|'+newest.id;if(dismissedReassignments.has(key))continue;
+                const box=node('div','atc-suggestion');box.append(node('strong','',t('possibleReplacement')+' · '+group.name),node('p','atc-muted',t('replacementHelp')),node('p','atc-note',(old.version||'?')+' · '+new Date(activityTime(old.activity)).toLocaleDateString(language)+' → '+(newest.version||'?')+' · '+new Date(activityTime(newest.activity)).toLocaleDateString(language)));
+                const tools=node('div','atc-toolbar');
+                function apply(replace){if(!window.confirm(t(replace?'replaceConfirm':'keepBothConfirm')))return;if(replace)r.DeviceIds=r.DeviceIds.filter(v=>v!==old.id);if(!r.DeviceIds.includes(newest.id))r.DeviceIds.push(newest.id);dirty=true;renderEditor();renderRules();diagnostic('changed','rule',Object.assign({Code:replace?'reassign-replace':'reassign-keep'},ruleCounts(r,selected)));}
+                tools.append(button(t('replaceAssignment'),()=>apply(true),false,'reassign-replace'),button(t('keepBoth'),()=>apply(false),false,'reassign-keep'),button(t('dismiss'),()=>{dismissedReassignments.add(key);suggestions();},false,'reassign-dismiss'));box.append(tools);root.append(box);
+            }
+        }
+    }
+    function selectedValues(id) {
+        const isUser=id==='atcUsers',key=isUser?userKey:v=>v,checked=[...find(id).querySelectorAll('input[type=checkbox]:checked')].map(i=>i.value),set=new Set(checked.map(key)),previous=(isUser?rules[selected]?.UserIds:rules[selected]?.DeviceIds)||[];
+        return [...previous.filter(v=>set.has(key(v))),...checked.filter(v=>!previous.some(p=>key(p)===key(v)))];
+    }
     function renderEditor() {
-        const rule=rules[selected];find('atcEditor').hidden=!rule;if(!rule)return;
-        find('atcName').value=rule.Name;find('atcEnabled').checked=rule.IsEnabled;
-        find('atcAllDevices').checked=rule.AllDevices;find('atcAllUsers').checked=rule.AllUsers;
-        picks('atcDevices',devices,rule.DeviceIds,false);picks('atcUsers',users,rule.UserIds,true);
-        selectionState('atcDevices');selectionState('atcUsers');
-        find('atcCodec').value=rule.TargetCodec;find('atcChannels').value=String(rule.MaxAudioChannels);find('atcBitrate').value=String(rule.MaxAudioBitrate);
-        find('atcPreserve').checked=rule.PreserveCompatibleAudio;find('atcStereo').checked=rule.PreserveStereo;find('atcRuleDiagnostics').checked=rule.EnableDiagnostics;
+        const r=rules[selected];find('atcEditor').hidden=!r;find('atcEditorPanel').hidden=!r;if(!r)return;
+        find('atcEditorTitle').textContent='· '+r.Name;find('atcRuleReference').textContent=r.Id;
+        find('atcName').value=r.Name;find('atcEnabled').checked=r.IsEnabled;
+        find('atcAllDevices').checked=r.AllDevices;find('atcSelectedDevices').checked=!r.AllDevices;find('atcAllUsers').checked=r.AllUsers;find('atcSelectedUsers').checked=!r.AllUsers;
+        picks('atcDevices',devices,r.DeviceIds,false);picks('atcUsers',users,r.UserIds,true);
+        find('atcCodec').value=r.TargetCodec;find('atcChannels').value=String(r.MaxAudioChannels);find('atcBitrate').value=String(r.MaxAudioBitrate);
+        find('atcPreserve').checked=r.PreserveCompatibleAudio;find('atcStereo').checked=r.PreserveStereo;find('atcRuleDiagnostics').checked=r.EnableDiagnostics;suggestions();summary();
         if(validationAttempted)renderValidation(validate(),false);
     }
     function collectEditor() {
         const r=rules[selected];if(!loaded||busy||!r)return;
         Object.assign(r,{Name:find('atcName').value,IsEnabled:find('atcEnabled').checked,AllDevices:find('atcAllDevices').checked,AllUsers:find('atcAllUsers').checked,
-            DeviceIds:selectedValues('atcDevices'),UserIds:selectedValues('atcUsers'),TargetCodec:find('atcCodec').value,
-            MaxAudioChannels:Number(find('atcChannels').value),MaxAudioBitrate:Number(find('atcBitrate').value),PreserveCompatibleAudio:find('atcPreserve').checked,PreserveStereo:find('atcStereo').checked,EnableDiagnostics:find('atcRuleDiagnostics').checked});
-        selectionState('atcDevices');selectionState('atcUsers');dirty=true;renderRules();if(validationAttempted)renderValidation(validate(),false);
+            DeviceIds:selectedValues('atcDevices'),UserIds:selectedValues('atcUsers'),TargetCodec:find('atcCodec').value,MaxAudioChannels:Number(find('atcChannels').value),MaxAudioBitrate:Number(find('atcBitrate').value),PreserveCompatibleAudio:find('atcPreserve').checked,PreserveStereo:find('atcStereo').checked,EnableDiagnostics:find('atcRuleDiagnostics').checked});
+        selectionState('atcDevices');selectionState('atcUsers');find('atcEditorTitle').textContent='· '+r.Name;dirty=true;suggestions();renderRules();if(validationAttempted)renderValidation(validate(),false);
     }
     function validate() {
         const errors=[],ids=new Set();const add=(index,field,code)=>errors.push({index,field,code});
@@ -307,7 +443,7 @@
         return errors;
     }
     function renderValidation(errors,focus) {
-        validationErrors=errors;
+        validationErrors=errors;if(focus&&errors.length){view(errors[0].field==='Diagnostics.Level'?'diagnostics':'rules');if(errors[0].index>=0)find('atcEditorPanel').open=true;}
         page.querySelectorAll('.atc-field-error').forEach(e=>e.remove());page.querySelectorAll('[aria-invalid=true]').forEach(e=>{e.removeAttribute('aria-invalid');e.removeAttribute('aria-describedby');e.classList.remove('atc-invalid');});
         page.querySelectorAll('.atc-card').forEach(card=>card.classList.toggle('atc-invalid',errors.some(e=>e.index===Number(card.dataset.rulePosition))));
         if(focus&&errors[0]&&errors[0].index>=0&&selected!==errors[0].index){selected=errors[0].index;renderEditor();renderRules();return renderValidation(errors,focus);}
@@ -326,11 +462,12 @@
             const result=await Promise.allSettled([
                 request('configuration',()=>http('GET','Plugins/'+pluginId+'/Configuration')),
                 request('devices',()=>http('GET','Devices')),
-                request('users',()=>http('GET','Users'))
+                request('users',()=>http('GET','Users')),
+                request('plugin-version',()=>http('GET','Plugins')),request('sessions',()=>http('GET','Sessions'))
             ]);
             if(ticket!==generation||disposed){diagnostic('initialization-aborted','interface',{Code:'hidden'});return;}
             const steps=['configuration','devices','users'];
-            const errors=result.flatMap((item,index)=>item.status==='rejected'?[{key:errorKey(steps[index]),status:safeError(item.reason).Status,code:safeError(item.reason).Code}]:[]);
+            const errors=result.slice(0,3).flatMap((item,index)=>item.status==='rejected'?[{key:errorKey(steps[index]),status:safeError(item.reason).Status,code:safeError(item.reason).Code}]:[]);
             if(errors.length){showStatus('interfaceError',errors);return;}
             let nextConfig,nextDevices,nextUsers;
             try {nextConfig=normalize(result[0].value);diagnostic('configuration-processed','configuration',{Schema:2,Count:nextConfig.Rules.length});}
@@ -338,8 +475,9 @@
             try {
                 const data=result[1].value;
                 if(!data||!Array.isArray(data.Items))throw problem('invalid-response');
-                const deviceMap=new Map();data.Items.forEach(d=>{if(d&&typeof d.Id==='string')deviceMap.set(d.Id,{id:d.Id,name:d.CustomName||d.Name||t('devices'),client:d.AppName||'',version:d.AppVersion||'',activity:d.DateLastActivity||null});});
-                nextDevices=Array.from(deviceMap.values());diagnostic('rendered','devices',{Count:nextDevices.length});
+
+                const sessions=result[4].status==='fulfilled'&&Array.isArray(result[4].value)?result[4].value:[];sessionsAvailable=result[4].status==='fulfilled'&&Array.isArray(result[4].value);
+                nextDevices=deviceRegistrations(data.Items,sessions,t('devices'));diagnostic('rendered','devices',{Count:nextDevices.length});
             } catch(error){fail('devices',error);return;}
             try {
                 const data=result[2].value;
@@ -347,6 +485,7 @@
                 nextUsers=data.filter(u=>u&&validGuid(u.Id)).map(u=>({id:u.Id,name:u.Name||t('users'),activity:u.LastActivityDate||null}));diagnostic('rendered','users',{Count:nextUsers.length});
             } catch(error){fail('users',error);return;}
             config=nextConfig;devices=nextDevices;users=nextUsers;rules=config.Rules;
+            const plugins=result[3].status==='fulfilled'&&Array.isArray(result[3].value)?result[3].value:[];const installed=plugins.find(p=>userKey(p.Id)===userKey(pluginId));serverVersion=installed&&/^\d{1,3}(\.\d{1,3}){3}$/.test(installed.Version)?installed.Version:'unknown';
             language=config.UiLanguage==='de'?'de':'en';find('atcLanguage').value=language;localize();
             find('atcMaster').checked=!!config.IsEnabled;const log=config.Diagnostics;
             find('atcLogLevel').value=log.Level;find('atcLogMatching').checked=!!log.DetailedRuleMatching;find('atcLogProfiles').checked=!!log.DeviceProfileChanges;find('atcLogResponse').checked=!!log.PlaybackResponseAnalysis;find('atcLogPerformance').checked=!!log.PerformanceMeasurements;
@@ -372,28 +511,36 @@
         finally{busy=false;availability();}
     }
     function initialize() {
+
+        for(const [id,name] of [['atcRulesTab','rules'],['atcDiagnosticsTab','diagnostics']]){
+            listen(find(id),'click',()=>{view(name);diagnostic('control','interface',{Code:'tab-'+name});});
+            listen(find(id),'keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();view(event.key==='Home'?'rules':event.key==='End'?'diagnostics':name==='rules'?'diagnostics':'rules',true);}});
+        }
+        try{const value=window.localStorage.getItem('atc.deviceActivityDays');if(['0','30','60','90','180','365'].includes(value))find('atcActivityFilter').value=value;}catch(_){/* presentation preference only */}
+        listen(find('atcActivityFilter'),'change',()=>{try{window.localStorage.setItem('atc.deviceActivityDays',find('atcActivityFilter').value);}catch(_){}filterPicks('atcDevices');suggestions();summary();diagnostic('control','devices',{Code:'activity-filter'});});
         sessionId=uuid();diagnostic('script-start','interface',{Code:'script'});
         // Register recovery first; the remaining fields may fail independently of API loading.
         listen(find('atcReload'),'click',()=>{diagnostic('reload','interface',{Code:'reload'});if(!dirty||window.confirm(t('reloadConfirm')))load('reload');});
         listen(find('atcCopyReport'),'click',async()=>{
             if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(find('atcReport').value);status(t('copied'));return;}catch(_){/* manual copy remains available */}}
-            find('atcReport').focus();find('atcReport').select();status(t('selectReport'));
+            find('atcReportPanel').open=true;find('atcReport').focus();find('atcReport').select();status(t('selectReport'));
         });
-        listen(find('atcLanguage'),'change',()=>{language=find('atcLanguage').value==='de'?'de':'en';localize();dirty=loaded;diagnostic('changed','settings',{Code:'language'});if(loaded){renderEditor();renderRules();}});
+        listen(find('atcLanguage'),'change',()=>{language=find('atcLanguage').value==='de'?'de':'en';localize();dirty=loaded;summary();diagnostic('changed','settings',{Code:'language'});if(loaded){renderEditor();renderRules();}});
         listen(page,'click',event=>{const button=event.target.closest('button');if(!button||!page.contains(button))return;
             const codes={atcAdd:'add',atcReload:'reload',atcDebugPreset:'debug-preset',atcSave:'save',atcCopyReport:'copy-report'};
             if(codes[button.id])diagnostic('control','interface',{Code:codes[button.id]});
         });
+        listen(page,'keydown',event=>{if(event.key==='Escape'){page.querySelectorAll('.atc-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});}});
         listen(page,'pageshow',()=>{diagnostic('page-show','lifecycle',{Code:'pageshow'});if(shown&&!dirty)load('pageshow');else if(!loaded&&!busy)load('pageshow');else if(dirty)diagnostic('initialization-aborted','interface',{Code:'unsaved-retained'});shown=true;});
         listen(page,'pagebeforehide',()=>{diagnostic('page-hide','lifecycle',{Code:'hidden'});if(busy){generation++;busy=false;loaded=false;availability();}flush();});
         listen(page,'pagedestroy',dispose);
         find('atcBitrate').replaceChildren();
-        bitrates.forEach(rate=>find('atcBitrate').add(new Option(String(rate),String(rate))));
-        listen(find('atcEditor'),'input',event=>{if(event.target.id==='atcDeviceSearch'||event.target.id==='atcUserSearch'){filterPicks(event.target.id==='atcDeviceSearch'?'atcDevices':'atcUsers');return;}collectEditor();});
-        listen(find('atcEditor'),'change',event=>{if(event.target.type==='search'){diagnostic('control','rule',{Code:'filter'});return;}collectEditor();if(rules[selected])diagnostic('changed','rule',Object.assign({Code:'change',Count:rules.length},ruleCounts(rules[selected],selected)));});
-        for(const id of ['atcMaster','atcLogLevel','atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])listen(find(id),'change',()=>{if(!loaded||busy)return;dirty=true;diagnostic('changed','settings',{Code:id==='atcMaster'?'master':'logging'});});
-        listen(find('atcAdd'),'click',()=>{if(!loaded||busy||rules.length>=64)return;rules.push(newRule());selected=rules.length-1;dirty=true;renderEditor();renderRules();diagnostic('changed','rule',{Code:'add',Count:rules.length});find('atcName').focus();});
-        listen(find('atcDebugPreset'),'click',()=>{if(!loaded||busy)return;find('atcLogLevel').value='Debug';for(const id of ['atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])find(id).checked=true;dirty=true;diagnostic('changed','settings',{Code:'debug-preset'});});
+        bitrates.forEach(rate=>find('atcBitrate').add(new Option(String(rate/1000),String(rate))));
+        listen(find('atcEditor'),'input',event=>{if(event.target.id==='atcActivityFilter')return;if(event.target.id==='atcDeviceSearch'||event.target.id==='atcUserSearch'){filterPicks(event.target.id==='atcDeviceSearch'?'atcDevices':'atcUsers');return;}collectEditor();});
+        listen(find('atcEditor'),'change',event=>{if(event.target.id==='atcActivityFilter')return;if(event.target.type==='search'){diagnostic('control','rule',{Code:'filter'});return;}collectEditor();if(rules[selected])diagnostic('changed','rule',Object.assign({Code:'change',Count:rules.length},ruleCounts(rules[selected],selected)));});
+        for(const id of ['atcMaster','atcLogLevel','atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])listen(find(id),'change',()=>{if(!loaded||busy)return;dirty=true;summary();diagnostic('changed','settings',{Code:id==='atcMaster'?'master':'logging'});});
+        listen(find('atcAdd'),'click',()=>{if(!loaded||busy||rules.length>=64)return;rules.push(newRule());selected=rules.length-1;dirty=true;renderEditor();renderRules();diagnostic('changed','rule',{Code:'add',Count:rules.length});find('atcEditorPanel').open=true;view('rules');find('atcName').focus();});
+        listen(find('atcDebugPreset'),'click',()=>{if(!loaded||busy)return;find('atcLogLevel').value='Debug';for(const id of ['atcLogMatching','atcLogProfiles','atcLogResponse','atcLogPerformance'])find(id).checked=true;dirty=true;summary();diagnostic('changed','settings',{Code:'debug-preset'});});
         listen(find('ATCForm'),'submit',save);
         diagnostic('handlers-registered','interface',{Count:listeners.length});availability();
         load('script');
