@@ -24,6 +24,12 @@
       "url": "https://github.com/upchui/Jellyfin-DirectPlayForce",
       "ref": null,
       "commit": "4b6abc8325f3b7ad8a7c90e062dd52154dd60547"
+    },
+    {
+      "name": "android-m24",
+      "url": "https://github.com/jellyfin/jellyfin-androidtv",
+      "ref": "v0.20.1",
+      "commit": "ddd51d00b290b8d3ba16662e42a55120a3ad0aab"
     }
   ],
   "restoredPackageEvidence": [

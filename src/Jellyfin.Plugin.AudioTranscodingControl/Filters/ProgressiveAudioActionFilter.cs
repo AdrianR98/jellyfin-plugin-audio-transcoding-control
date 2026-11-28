@@ -9,6 +9,7 @@ using Jellyfin.Plugin.AudioTranscodingControl.Configuration;
 using Jellyfin.Plugin.AudioTranscodingControl.Diagnostics;
 using Jellyfin.Plugin.AudioTranscodingControl.Policy;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Devices;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Model.Dlna;
@@ -30,6 +31,7 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
     private readonly IMediaEncoder _encoder;
     private readonly PlaybackPolicySessions _sessions;
     private readonly ILogger<ProgressiveAudioActionFilter> _logger;
+    private readonly IDeviceManager _devices;
 
     /// <summary>Initializes the native request filter.</summary>
     /// <param name="options">Current configuration.</param>
@@ -39,9 +41,10 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
     /// <param name="encoder">Native codec capabilities.</param>
     /// <param name="sessions">Bounded validated PlaybackInfo contexts.</param>
     /// <param name="logger">Native logger.</param>
+    /// <param name="devices">Native credential registry.</param>
     public ProgressiveAudioActionFilter(IOptionsSnapshot<PluginConfiguration> options, IUserManager users, ILibraryManager library,
-        IMediaSourceManager sources, IMediaEncoder encoder, PlaybackPolicySessions sessions, ILogger<ProgressiveAudioActionFilter> logger)
-    { _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _sessions = sessions; _logger = logger; }
+        IMediaSourceManager sources, IMediaEncoder encoder, PlaybackPolicySessions sessions, ILogger<ProgressiveAudioActionFilter> logger, IDeviceManager devices)
+    { _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _sessions = sessions; _logger = logger; _devices = devices; }
 
     /// <inheritdoc />
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -101,13 +104,17 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
                 : userClaims.Length > 1 ? "progressive-authenticated-user-ambiguous" : "progressive-authenticated-identity-invalid");
             return;
         }
-        var rule = RuleEvaluator.Select(context.HttpContext.User, config);
-        if (rule is null) { Skip("progressive-no-valid-rule"); return; }
-        var proof = _sessions.Find(userId, device, Text("playSessionId"));
-        log.Write(LogLevel.Debug, 3206, "Progressive context comparisons; negotiationRef={NegotiationRef}; lookupOrigin=authenticated-user-device-and-native-play-session; contextFound={Found}; authenticatedUserEqualsContext={UserMatch}; authenticatedDeviceEqualsContext={DeviceMatch}; itemEqualsContext={ItemMatch}; currentRuleEqualsContext={RuleMatch}; offeredDeviceState={OfferedDeviceState}; offeredDeviceRef={OfferedDeviceRef}; boundEqualsAuthenticated={ClaimMatch}; boundEqualsNativeOffer={OfferMatch}; queryEqualsBound={QueryMatch}",
+        var credential = PlaybackCredential.Resolve(context.HttpContext.User, _devices, out var credentialReason);
+        log.Write(LogLevel.Debug, 3208, "Progressive credential verification; verified={Verified}; reason={Reason}; credentialRef={CredentialRef}; credentialDeviceRef={CredentialDeviceRef}; nativeClaimEqualsCredentialDevice={DeviceMatch}; negotiationRef={NegotiationRef}",
+            credential is not null, credentialReason, PluginDiagnostics.Reference(credential?.Key), PluginDiagnostics.Reference(credential?.Device), credential?.Device == device, PlaybackPolicySessions.SessionReference(Text("playSessionId")));
+        if (credential is null) { Skip(credentialReason); return; }
+        var proof = _sessions.Find(userId, credential.Key, Text("playSessionId"));
+        var associated = proof is not null && !proof.Ambiguous && proof.CredentialDevice == credential.Device && (device == proof.Device || device == credential.Device);
+        var rule = associated ? RuleEvaluator.SelectVerified(userId, proof!.Device, config) : null;
+        log.Write(LogLevel.Debug, 3206, "Progressive context comparisons; negotiationRef={NegotiationRef}; lookupOrigin=authenticated-user-verified-credential-and-native-play-session; contextFound={Found}; authenticatedUserEqualsContext={UserMatch}; authenticatedDeviceEqualsContext={DeviceMatch}; itemEqualsContext={ItemMatch}; currentRuleEqualsContext={RuleMatch}; offeredDeviceState={OfferedDeviceState}; offeredDeviceRef={OfferedDeviceRef}; boundEqualsAuthenticated={ClaimMatch}; boundEqualsNativeOffer={OfferMatch}; queryEqualsBound={QueryMatch}",
             PlaybackPolicySessions.SessionReference(Text("playSessionId")), proof is not null,
             proof is null ? "not-evaluated" : (proof.User == userId).ToString(), proof is null ? "not-evaluated" : string.Equals(proof.Device, device, StringComparison.Ordinal).ToString(),
-            proof is null ? "not-evaluated" : (proof.Item == Arg<Guid>("itemId")).ToString(), proof is null ? "not-evaluated" : (proof.Fingerprint == PlaybackPolicySessions.Fingerprint(rule)).ToString(),
+            proof is null ? "not-evaluated" : (proof.Item == Arg<Guid>("itemId")).ToString(), proof is null || rule is null ? "not-evaluated" : (proof.Fingerprint == PlaybackPolicySessions.Fingerprint(rule)).ToString(),
             proof?.OfferedDeviceState ?? "unavailable", PluginDiagnostics.Reference(proof?.OfferedDevice),
             requestedDevice is null ? "not-evaluated" : string.Equals(requestedDevice, device, StringComparison.Ordinal).ToString(),
             requestedDevice is null || proof?.OfferedDevice is null ? "not-evaluated" : string.Equals(requestedDevice, proof.OfferedDevice, StringComparison.Ordinal).ToString(),
@@ -115,21 +122,25 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
         if (string.IsNullOrEmpty(Text("playSessionId"))) { Skip("progressive-play-session-missing"); return; }
         if (!Guid.TryParse(Text("playSessionId"), out var sessionId) || sessionId == Guid.Empty) { Skip("progressive-play-session-invalid"); return; }
         if (proof is null) { Skip("progressive-playbackinfo-context-not-found"); return; }
+        if (proof.Ambiguous) { Skip("progressive-context-ambiguous"); return; }
+        if (!associated) { Skip("progressive-native-device-not-associated-with-credential-context"); return; }
+        if (rule is null) { Skip("progressive-no-current-matching-rule"); return; }
         if (proof.Item != Arg<Guid>("itemId")) { Skip("progressive-context-item-mismatch"); return; }
-        if (proof.Fingerprint != PlaybackPolicySessions.Fingerprint(rule)) { Skip("progressive-context-rule-changed"); return; }
+        log.Write(LogLevel.Debug, 3209, "Verified playback association; nativeDeviceEqualsNegotiated={SameDevice}; credentialDeviceVerified=true; currentRuleId={RuleId}; ruleChanged={RuleChanged}; negotiationRef={NegotiationRef}",
+            device == proof.Device, rule.Id, proof.Fingerprint != PlaybackPolicySessions.Fingerprint(rule), PlaybackPolicySessions.SessionReference(Text("playSessionId")));
         if (queryDevices.Count > 1) { Skip("progressive-query-device-ambiguous"); return; }
         if (queryDevices.Count == 1 && (string.IsNullOrWhiteSpace(queryDevices[0]) || queryDevices[0]!.Length > 512 || queryDevices[0]!.Any(char.IsControl)))
         { Skip("progressive-query-device-invalid"); return; }
         if (queryDevices.Count == 0 ? requestedDevice is not null : !string.Equals(queryDevices[0], requestedDevice, StringComparison.Ordinal))
         { Skip("progressive-device-argument-query-mismatch"); return; }
         // The optional native job-routing DeviceId is not an authenticated claim. Accept only the exact
-        // authenticated ID or the exact transport value issued in THIS authenticated PlaybackInfo context.
+        // negotiated device ID or the exact transport value issued in THIS verified credential context.
         // No case folding, trimming, second decoding, query-based context lookup or claim substitution.
-        if (requestedDevice is not null && !string.Equals(requestedDevice, device, StringComparison.Ordinal)
+        if (requestedDevice is not null && !string.Equals(requestedDevice, proof.Device, StringComparison.Ordinal)
             && !(proof.OfferedDeviceState == "single" && string.Equals(requestedDevice, proof.OfferedDevice, StringComparison.Ordinal)))
         { Skip("progressive-device-neither-authenticated-nor-issued"); return; }
         log.Write(LogLevel.Debug, 3207, "Progressive device check accepted; negotiationRef={NegotiationRef}; reason={DeviceCheck}; authenticated-context-required=true; deviceArgumentsUnchanged=true",
-            PlaybackPolicySessions.SessionReference(Text("playSessionId")), requestedDevice is null ? "optional-routing-device-absent" : string.Equals(requestedDevice, device, StringComparison.Ordinal) ? "exact-authenticated-device" : "exact-native-issued-transport-device");
+            PlaybackPolicySessions.SessionReference(Text("playSessionId")), requestedDevice is null ? "optional-routing-device-absent" : string.Equals(requestedDevice, proof.Device, StringComparison.Ordinal) ? "exact-negotiated-device" : "exact-native-issued-transport-device");
         var user = _users.GetUserById(userId);
         log.Write(LogLevel.Debug, 3204, "Progressive permissions and request; playback={Playback}; audioTranscode={Audio}; videoTranscode={Video}; remux={Remux}; sourceIdPresent={Source}; audioIndexPresent={AudioIndex}; allowAudioCopy={AudioCopy}; allowVideoCopy={VideoCopy}",
             user?.HasPermission(PermissionKind.EnableMediaPlayback) ?? false, user?.HasPermission(PermissionKind.EnableAudioPlaybackTranscoding) ?? false,
@@ -149,7 +160,8 @@ public sealed class ProgressiveAudioActionFilter : IAsyncActionFilter
         if (!string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase)) { Skip("progressive-negotiated-source-mismatch"); return; }
         var audio = SourceSelection.Audio(source, Arg<int>("audioStreamIndex"), out var audioReason);
         if (audio is null) { Skip(audioReason); return; }
-        if (audio.Index != proof.AudioIndex) { Skip("progressive-track-requires-new-playbackinfo"); return; }
+        log.Write(LogLevel.Debug, 3210, "Progressive selected track revalidated; initialIndex={InitialIndex}; currentIndex={CurrentIndex}; changed={Changed}; sourceBound=true; codec={Codec}; channels={Channels}; negotiationRef={NegotiationRef}",
+            proof.AudioIndex, audio.Index, proof.AudioIndex != audio.Index, PluginDiagnostics.Codec(audio.Codec), audio.Channels, PlaybackPolicySessions.SessionReference(Text("playSessionId")));
         if (rule.PreserveStereo && audio.Channels <= 2) { Skip("progressive-stereo-preserved"); return; }
         var requestedCodecs = Text("audioCodec")?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (requestedCodecs is not null && requestedCodecs.Any(c => c is not ("aac" or "ac3")))

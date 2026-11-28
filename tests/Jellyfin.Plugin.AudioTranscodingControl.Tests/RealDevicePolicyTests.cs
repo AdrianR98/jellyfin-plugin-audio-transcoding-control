@@ -133,7 +133,7 @@ public sealed class RealDevicePolicyTests
     [Fact]
     public void NativeOfferParsingDoesNotInventOrNormalizeIdentities()
     {
-        var proof = new PreparedPolicy(Guid.NewGuid(), "opaque+device", Guid.NewGuid(), "source", 1, "rule");
+        var proof = new PreparedPolicy(Guid.NewGuid(), "opaque+device", Guid.NewGuid(), "source", 1, "rule") { CredentialKey = new string('A', 64), CredentialDevice = "registered-device" };
         Assert.Equal("opaque device", proof.WithNativeOffer("/Videos/synthetic/stream?DeviceId=opaque+device").OfferedDevice);
         Assert.Equal("opaque+device", proof.WithNativeOffer("/Videos/synthetic/stream?DeviceId=opaque%2Bdevice").OfferedDevice);
         Assert.Equal("ambiguous", proof.WithNativeOffer("/stream?DeviceId=a&deviceId=b").OfferedDeviceState);
@@ -145,10 +145,81 @@ public sealed class RealDevicePolicyTests
         Assert.DoesNotContain(session.ToString("N"), PlaybackPolicySessions.SessionReference(session.ToString("N")));
         using var sessions = new PlaybackPolicySessions();
         Assert.True(sessions.Remember(session.ToString("N"), proof));
-        Assert.Same(proof, sessions.Find(proof.User, proof.Device, session.ToString("D")));
-        Assert.Null(sessions.Find(Guid.NewGuid(), proof.Device, session.ToString("N")));
+        Assert.Same(proof, sessions.Find(proof.User, proof.CredentialKey!, session.ToString("D")));
+        Assert.Null(sessions.Find(Guid.NewGuid(), proof.CredentialKey!, session.ToString("N")));
         Assert.Null(sessions.Find(proof.User, "other-authenticated-device", session.ToString("N")));
-        Assert.Null(sessions.Find(proof.User, proof.Device, Guid.NewGuid().ToString("N")));
+        Assert.Null(sessions.Find(proof.User, proof.CredentialKey!, Guid.NewGuid().ToString("N")));
+        Assert.False(sessions.Remember(session.ToString("N"), proof with { Device = "different-negotiating-device" }));
+        Assert.True(sessions.Find(proof.User, proof.CredentialKey!, session.ToString("N"))!.Ambiguous);
+        Assert.False(sessions.Remember(session.ToString("N"), proof)); // Conflicting contexts never become usable again.
+    }
+
+    [Fact]
+    public async Task CompatibleAc3MultiTrackDirectPlaybackRetainsContextForSubsequentTrackChange()
+    {
+        var fixture = new HostFixture("ac3", 6);
+        fixture.User.SetPermission(PermissionKind.EnableVideoPlaybackTranscoding, false);
+        fixture.User.SetPermission(PermissionKind.EnablePlaybackRemuxing, false);
+        fixture.Source.SupportsTranscoding = false; fixture.Source.SupportsDirectStream = false;
+        fixture.Source.MediaStreams = [..fixture.Source.MediaStreams,
+            new() { Index = 2, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "truehd", Channels = 8, BitRate = 4000000 }];
+        using var server = PlaybackInfoIntegrationTests.CreateServer(fixture);
+        var request = PlaybackInfoIntegrationTests.Request(fixture);
+        var profile = JsonSerializer.Serialize(request.DeviceProfile);
+        var response = await PlaybackInfoIntegrationTests.Playback(server, fixture, request);
+        Assert.True(Assert.Single(response.MediaSources).SupportsDirectPlay);
+        Assert.Equal(profile, JsonSerializer.Serialize(request.DeviceProfile));
+        using var scope = server.Services.CreateScope();
+        var args = new Dictionary<string, object?> { ["itemId"] = fixture.Video.Id, ["container"] = "mkv", ["mediaSourceId"] = fixture.Source.Id,
+            ["playSessionId"] = response.PlaySessionId, ["audioStreamIndex"] = 2, ["audioCodec"] = "aac", ["audioBitRate"] = 768000,
+            ["audioChannels"] = 6, ["videoCodec"] = "hevc", ["allowVideoStreamCopy"] = true };
+        await Run(scope.ServiceProvider, fixture, args); Assert.Equal("ac3", args["audioCodec"]);
+    }
+
+    [Fact]
+    public async Task CredentialAssociationAllowsTokenRecordIdentityAndMutableTracksButRejectsUnrelatedCallers()
+    {
+        var fixture = new HostFixture("ac3", 6) { TokenDevice = "registered-at-login", ClaimDevice = "negotiating-device" };
+        fixture.User.SetPermission(PermissionKind.EnableVideoPlaybackTranscoding, false);
+        fixture.User.SetPermission(PermissionKind.EnablePlaybackRemuxing, false);
+        fixture.Source.SupportsTranscoding = false; fixture.Source.SupportsDirectStream = false;
+        fixture.Source.MediaStreams = [..fixture.Source.MediaStreams,
+            new() { Index = 2, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "truehd", Channels = 8, BitRate = 4000000 },
+            new() { Index = 3, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "dts", Channels = 7, Profile = "DTS-HD MA", BitRate = 2000000 },
+            new() { Index = 4, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "dts", Channels = 7, Profile = "DTS-ES", BitRate = 1500000 },
+            new() { Index = 5, Type = MediaBrowser.Model.Entities.MediaStreamType.Audio, Codec = "aac", Channels = 2, BitRate = 128000 }];
+        var maxBitrate = 640000; var enabled = true;
+        using var server = PlaybackInfoIntegrationTests.CreateServer(fixture, c =>
+        {
+            c.Ac3Rule.DeviceId = "negotiating-device";
+            var normalized = Configuration.ConfigurationMigration.Normalize(c);
+            c.SchemaVersion = 2; c.Rules = normalized.Rules; c.Diagnostics = normalized.Diagnostics;
+            c.Rules[0].MaxAudioBitrate = maxBitrate; c.IsEnabled = enabled;
+        });
+        var response = await PlaybackInfoIntegrationTests.Playback(server, fixture, PlaybackInfoIntegrationTests.Request(fixture));
+        fixture.ClaimDevice = fixture.TokenDevice; // No API authorization header: native authentication uses the token's registration.
+        async Task<Dictionary<string, object?>> Stream(int index, string? routing = "negotiating-device", string? session = null)
+        {
+            using var scope = server.Services.CreateScope();
+            var args = new Dictionary<string, object?> { ["itemId"] = fixture.Video.Id, ["container"] = "mkv", ["mediaSourceId"] = fixture.Source.Id,
+                ["playSessionId"] = session ?? response.PlaySessionId, ["audioStreamIndex"] = index, ["audioCodec"] = "aac", ["audioBitRate"] = 768000,
+                ["audioChannels"] = 6, ["videoCodec"] = "hevc", ["allowVideoStreamCopy"] = true, ["deviceId"] = routing };
+            await Run(scope.ServiceProvider, fixture, args);
+            Assert.Equal("hevc", args["videoCodec"]); Assert.Equal(true, args["allowVideoStreamCopy"]); return args;
+        }
+        foreach (var index in new[] { 1, 2, 3, 4, 1, 2 }) Assert.Equal("ac3", (await Stream(index))["audioCodec"]);
+        maxBitrate = 384000; Assert.Equal(384000, (await Stream(2))["audioBitRate"]); // Current policy, not a frozen fingerprint.
+        Assert.Equal("aac", (await Stream(5))["audioCodec"]); // Preserve stereo.
+        Assert.Equal("aac", (await Stream(99))["audioCodec"]);
+        Assert.Equal("aac", (await Stream(2, "unissued-routing-device"))["audioCodec"]);
+        Assert.Equal("aac", (await Stream(2, session: Guid.NewGuid().ToString("N")))["audioCodec"]);
+        fixture.ClaimDevice = "unrelated-device"; Assert.Equal("aac", (await Stream(2))["audioCodec"]);
+        fixture.ClaimDevice = fixture.TokenDevice;
+        fixture.Token = "different-valid-credential"; Assert.Equal("aac", (await Stream(2))["audioCodec"]);
+        fixture.Token = "sentinel-token-never-log";
+        fixture.CredentialUser = Guid.NewGuid(); Assert.Equal("aac", (await Stream(2))["audioCodec"]); fixture.CredentialUser = null;
+        fixture.User.SetPermission(PermissionKind.EnableAudioPlaybackTranscoding, false); Assert.Equal("aac", (await Stream(2))["audioCodec"]);
+        fixture.User.SetPermission(PermissionKind.EnableAudioPlaybackTranscoding, true); enabled = false; Assert.Equal("aac", (await Stream(2))["audioCodec"]);
     }
 
     private static async Task Run(IServiceProvider services, HostFixture fixture, Dictionary<string, object?> args, QueryString? rawQuery = null)

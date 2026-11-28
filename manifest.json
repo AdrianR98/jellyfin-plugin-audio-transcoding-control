@@ -8,6 +8,14 @@
     "owner": "AdrianR98",
     "versions": [
       {
+        "version": "0.2.4.0",
+        "changelog": "Verify native credential association across header and token-registration device identities; revalidate current audio tracks, policies and permissions. Preserve compatible AC3 direct play and video processing. Redesign the scoped native dashboard and device registration presentation with explicit assignment confirmation. Real Fire TV/receiver verification remains pending.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://github.com/AdrianR98/jellyfin-plugin-audio-transcoding-control/releases/download/v0.2.4/Jellyfin.Plugin.AudioTranscodingControl-0.2.4.zip",
+        "checksum": "ada3cfa52b71968d603afac2ac24aa08",
+        "timestamp": "2026-11-28T16:39:53Z"
+      },
+      {
         "version": "0.2.3.0",
         "changelog": "Separate authenticated device identity from native progressive routing DeviceId; accept only exact authenticated or same-context native-issued transport values. Preserve all session/rule/source/track/permission and video checks. Add pseudonymized per-field identity diagnostics and versioned dashboard resources with actual client UI build reporting. Exact productive Fire TV mismatch remains unobserved; unexplained differences safely bypass.",
         "targetAbi": "10.11.11.0",

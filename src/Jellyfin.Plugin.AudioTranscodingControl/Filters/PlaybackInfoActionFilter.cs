@@ -12,6 +12,7 @@ using Jellyfin.Plugin.AudioTranscodingControl.Configuration;
 using Jellyfin.Plugin.AudioTranscodingControl.Diagnostics;
 using Jellyfin.Plugin.AudioTranscodingControl.Policy;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Devices;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Model.Dlna;
@@ -42,6 +43,7 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
     private readonly IMediaSourceManager _sources;
     private readonly IMediaEncoder _encoder;
     private readonly ILogger<PlaybackInfoActionFilter> _logger;
+    private readonly IDeviceManager _devices;
 
     /// <summary>Initializes the request-scoped filter with existing Jellyfin services.</summary>
     /// <param name="options">Configuration snapshot.</param>
@@ -51,10 +53,11 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
     /// <param name="encoder">Native encoder capabilities.</param>
     /// <param name="sessions">Bounded proof of validated playback negotiation.</param>
     /// <param name="logger">Native logging category.</param>
+    /// <param name="devices">Native credential registry.</param>
     public PlaybackInfoActionFilter(IOptionsSnapshot<PluginConfiguration> options, IUserManager users,
-        ILibraryManager library, IMediaSourceManager sources, IMediaEncoder encoder, ILogger<PlaybackInfoActionFilter> logger, PlaybackPolicySessions sessions)
+        ILibraryManager library, IMediaSourceManager sources, IMediaEncoder encoder, ILogger<PlaybackInfoActionFilter> logger, PlaybackPolicySessions sessions, IDeviceManager devices)
     {
-        _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _logger = logger; _sessions = sessions;
+        _options = options; _users = users; _library = library; _sources = sources; _encoder = encoder; _logger = logger; _sessions = sessions; _devices = devices;
     }
 
     /// <inheritdoc />
@@ -123,12 +126,14 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         var analysisStarted = Stopwatch.GetTimestamp();
         try
         {
-            if (applied && context.HttpContext.Items.TryGetValue(typeof(PreparedPolicy), out var prepared) && prepared is PreparedPolicy proof
+            if (context.HttpContext.Items.TryGetValue(typeof(PreparedPolicy), out var prepared) && prepared is PreparedPolicy proof
                 && result.Result is ObjectResult { Value: PlaybackInfoResponse { ErrorCode: null, PlaySessionId: not null } info }
                 && info.MediaSources.Count(source => string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase)) == 1)
             {
                 var offer = info.MediaSources.Single(source => string.Equals(source.Id, proof.Source, StringComparison.OrdinalIgnoreCase));
                 proof = proof.WithNativeOffer(offer.TranscodingUrl);
+                diagnostics.Write(LogLevel.Debug, 2404, "Playback credential binding; origin=native-authenticated-token-and-device-registry; credentialRef={CredentialRef}; credentialDeviceRef={CredentialDeviceRef}; negotiationDeviceEqualsCredentialDevice={DeviceMatch}; negotiationRef={NegotiationRef}",
+                    PluginDiagnostics.Reference(proof.CredentialKey), PluginDiagnostics.Reference(proof.CredentialDevice), proof.Device == proof.CredentialDevice, PlaybackPolicySessions.SessionReference(info.PlaySessionId));
                 var retained = _sessions.Remember(info.PlaySessionId, proof);
                 diagnostics.Write(LogLevel.Debug, 2403, "Validated PlaybackInfo context; retained={Retained}; scoped-progressive-MKV=true; negotiationRef={NegotiationRef}; authenticatedDeviceOrigin=native-authentication-claim; authenticatedDeviceRef={AuthenticatedDeviceRef}; offeredDeviceOrigin=native-PlaybackInfo-TranscodingUrl-query; offeredDeviceState={OfferedDeviceState}; offeredDeviceRef={OfferedDeviceRef}; offeredEqualsAuthenticated={OfferedEqualsAuthenticated}",
                     retained, PlaybackPolicySessions.SessionReference(info.PlaySessionId), PluginDiagnostics.Reference(proof.Device),
@@ -200,7 +205,6 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
             diagnostics.Write(LogLevel.Debug, 2301, "Source video; codec={VideoCodec}; width={Width}; height={Height}; range={VideoRange}; dvProfile={DvProfile}; dvLevel={DvLevel}; dvCompatibilityId={DvCompatibilityId}; source-metadata-only=true",
                 PluginDiagnostics.Codec(inputVideo?.Codec), inputVideo?.Width, inputVideo?.Height, inputVideo?.VideoRangeType.ToString(), inputVideo?.DvProfile, inputVideo?.DvLevel, inputVideo?.DvBlSignalCompatibilityId);
         }
-        if (rule.PreserveStereo && audio.Channels <= 2) return Skip("stereo-preserved");
         var forceReencode = !rule.PreserveCompatibleAudio && audio.Codec == "ac3";
         var transformStarted = Stopwatch.GetTimestamp();
         diagnostics.Write(LogLevel.Debug, 2399, "Native video streaming profiles; count={Count}; offeredAc3={Ac3Offered}",
@@ -214,6 +218,18 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         if (options.PerformanceMeasurements && rule.EnableDiagnostics)
             diagnostics.Write(LogLevel.Debug, 2992, "Profile transformation durationMs={DurationMs}", Stopwatch.GetElapsedTime(transformStarted).TotalMilliseconds);
         if (transformed is null) return Skip(profileReason);
+        var credential = PlaybackCredential.Resolve(context.HttpContext.User, _devices, out var credentialReason);
+        diagnostics.Write(LogLevel.Debug, 2405, "Negotiation credential verification; verified={Verified}; reason={Reason}; credentialRef={CredentialRef}", credential is not null, credentialReason, PluginDiagnostics.Reference(credential?.Key));
+        if (credential is null) return Skip(credentialReason);
+        RuleEvaluator.Identity(context.HttpContext.User, out var device, out _);
+        context.HttpContext.Items[typeof(PreparedPolicy)] = new PreparedPolicy(userId, device, itemId.Value, source.Id, audio.Index, PlaybackPolicySessions.Fingerprint(rule))
+            { CredentialKey = credential.Key, CredentialDevice = credential.Device };
+        // Retain an authenticated context even when this track is preserved; later track selection is mutable.
+        if (rule.PreserveStereo && audio.Channels <= 2) return Skip("stereo-preserved");
+        if (rule.PreserveCompatibleAudio && audio.Codec == "ac3" && audio.Channels <= rule.MaxAudioChannels
+            && audio.BitRate is > 0 && audio.BitRate <= rule.MaxAudioBitrate
+            && !user.HasPermission(PermissionKind.EnableVideoPlaybackTranscoding) && !user.HasPermission(PermissionKind.EnablePlaybackRemuxing))
+            return Skip("compatible-ac3-preserved-context-retained");
 
         if (rule.EnableDiagnostics && options.DeviceProfileChanges && diagnostics.Enabled(LogLevel.Debug))
         {
@@ -230,8 +246,6 @@ public sealed class PlaybackInfoActionFilter : IAsyncActionFilter
         // Only narrow native audio-copy permission when the user explicitly requests re-encoding of AC3.
         // Video permissions and all other action arguments remain untouched.
         if (forceReencode) context.ActionArguments["allowAudioStreamCopy"] = false;
-        RuleEvaluator.Identity(context.HttpContext.User, out var device, out _);
-        context.HttpContext.Items[typeof(PreparedPolicy)] = new PreparedPolicy(userId, device, itemId.Value, source.Id, audio.Index, PlaybackPolicySessions.Fingerprint(rule));
         dto.DeviceProfile = transformed;
         return true;
     }

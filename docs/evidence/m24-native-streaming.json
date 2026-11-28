@@ -1,0 +1,106 @@
+{
+  "serverVersion": "10.11.11",
+  "pluginVersion": "0.2.4.0",
+  "syntheticMedia": true,
+  "checks": {
+    "differentHeaderAndTokenRecordDevicesSameCredential": true,
+    "headerlessProgressiveFetch": true,
+    "nativeAudioOnlyPermission": true,
+    "originalAc3DirectPlayPreserved": true,
+    "nativeTrackSequence": [
+      {
+        "step": "switch-truehd",
+        "outputAudio": {
+          "codec_name": "ac3",
+          "codec_type": "audio",
+          "channels": 6,
+          "bit_rate": "640000"
+        },
+        "outputVideo": {
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2160
+        }
+      },
+      {
+        "step": "switch-dts-core",
+        "outputAudio": {
+          "codec_name": "ac3",
+          "codec_type": "audio",
+          "channels": 6,
+          "bit_rate": "640000"
+        },
+        "outputVideo": {
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2160
+        }
+      },
+      {
+        "step": "switch-back-ac3",
+        "outputAudio": {
+          "codec_name": "ac3",
+          "codec_type": "audio",
+          "channels": 6,
+          "bit_rate": "640000"
+        },
+        "outputVideo": {
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2160
+        }
+      },
+      {
+        "step": "seek-truehd",
+        "outputAudio": {
+          "codec_name": "ac3",
+          "codec_type": "audio",
+          "channels": 6,
+          "bit_rate": "640000"
+        },
+        "outputVideo": {
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2160
+        }
+      },
+      {
+        "step": "resume-truehd",
+        "outputAudio": {
+          "codec_name": "ac3",
+          "codec_type": "audio",
+          "channels": 6,
+          "bit_rate": "640000"
+        },
+        "outputVideo": {
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 3840,
+          "height": 2160
+        }
+      }
+    ],
+    "capturedFfmpegAudioVideoArguments": [
+      {
+        "videoCodec": "copy",
+        "audioCodec": "ac3",
+        "channels": "6",
+        "bitrate": "640000"
+      }
+    ],
+    "unrelatedSameUserCredentialRetainsAac": true,
+    "nativePermissionsUnchanged": true,
+    "pluginLogsExcludeIdentitiesCredentialsAndPaths": true,
+    "nativeTranscodeSteps": 5
+  },
+  "limits": [
+    "Native TrueHD input has six channels; native DTS fixture is six-channel DTS core, not DTS-HD MA or DTS-ES.",
+    "TrueHD 7.1 and DTS-HD MA/DTS-ES 6.1 policy requests are covered by focused metadata fixtures.",
+    "No Fire TV, receiver, HDR, Dolby Vision or Atmos output verification.",
+    "Native track transitions/seek/resume use fresh automatic PlaybackInfo sessions; native encoder job/cache semantics are unchanged."
+  ]
+}
