@@ -28,7 +28,8 @@ public sealed class UiDiagnosticsController(ILogger<UiDiagnosticsController> log
     [RequestSizeLimit(16384)]
     public IActionResult Post([FromBody] UiDiagnosticBatch batch)
     {
-        if (batch.SessionId == Guid.Empty || batch.Events is null || batch.Events.Length is < 1 or > 32
+        if (batch.SessionId == Guid.Empty || (batch.UiVersion is not null && batch.UiVersion is not ("0.2.1.0" or "0.2.2.0" or "0.2.3.0"))
+            || batch.Events is null || batch.Events.Length is < 1 or > 32
             || batch.Events.Any(e => e is null || !Events.Contains(e.Event) || !Steps.Contains(e.Step) || !Codes.Contains(e.Code)
                 || !Kinds.Contains(e.Kind) || !Elements.Contains(e.Element) || e.Sequence is < 1 or > 1000000 || e.Status is < 100 or > 599
                 || !Fields.Contains(e.Field) || e.RulePosition is < 0 or > 64 || e.EnabledRules is < 0 or > 64
@@ -41,8 +42,8 @@ public sealed class UiDiagnosticsController(ILogger<UiDiagnosticsController> log
         var diagnostics = new PluginDiagnostics(logger, new() { Level = "Information" }, batch.SessionId.ToString("N"));
         foreach (var entry in batch.Events)
             diagnostics.Write(entry.Event == "error" ? LogLevel.Warning : LogLevel.Information, entry.Event == "error" ? 3101 : 3100,
-                "[ATC:UI] event={UiEvent}; step={Step}; code={Code}; sequence={Sequence}; status={HttpStatus}; durationMs={DurationMs}; count={Count}; schema={Schema}; uiVersion=0.2.2.0; rulePosition={RulePosition}; ruleId={RuleId}; field={Field}; selectedDevices={SelectedDevices}; selectedUsers={SelectedUsers}; enabledRules={EnabledRules}; allDevices={AllDevices}; allUsers={AllUsers}; errorKind={ErrorKind}; missingElement={MissingElement}; safeStack={SafeStack}",
-                entry.Event, entry.Step, entry.Code, entry.Sequence, entry.Status.HasValue ? (object)entry.Status.Value : "unknown", entry.DurationMs, entry.Count, entry.Schema, entry.RulePosition, entry.RuleId, entry.Field, entry.SelectedDevices, entry.SelectedUsers, entry.EnabledRules, entry.AllDevices, entry.AllUsers, entry.Kind, entry.Element, string.Join(" <- ", entry.Frames));
+                "[ATC:UI] event={UiEvent}; step={Step}; code={Code}; sequence={Sequence}; status={HttpStatus}; durationMs={DurationMs}; count={Count}; schema={Schema}; clientUiVersion={ClientUiVersion}; serverPluginVersion=0.2.3.0; rulePosition={RulePosition}; ruleId={RuleId}; field={Field}; selectedDevices={SelectedDevices}; selectedUsers={SelectedUsers}; enabledRules={EnabledRules}; allDevices={AllDevices}; allUsers={AllUsers}; errorKind={ErrorKind}; missingElement={MissingElement}; safeStack={SafeStack}",
+                entry.Event, entry.Step, entry.Code, entry.Sequence, entry.Status.HasValue ? (object)entry.Status.Value : "unknown", entry.DurationMs, entry.Count, entry.Schema, batch.UiVersion ?? "unknown", entry.RulePosition, entry.RuleId, entry.Field, entry.SelectedDevices, entry.SelectedUsers, entry.EnabledRules, entry.AllDevices, entry.AllUsers, entry.Kind, entry.Element, string.Join(" <- ", entry.Frames));
         return NoContent();
     }
 
@@ -61,6 +62,8 @@ public sealed class UiDiagnosticBatch
 {
     /// <summary>Gets or sets the random page correlation UUID.</summary>
     public Guid SessionId { get; set; }
+    /// <summary>Gets or sets the allowlisted executed UI build, or null for older cached clients.</summary>
+    public string? UiVersion { get; set; }
     /// <summary>Gets or sets at most 32 events.</summary>
     public UiDiagnosticEvent[] Events { get; set; } = [];
 }

@@ -3,16 +3,39 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Jellyfin.Plugin.AudioTranscodingControl.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Jellyfin.Plugin.AudioTranscodingControl.Policy;
 
-internal sealed record PreparedPolicy(Guid User, string Device, Guid Item, string Source, int AudioIndex, string Fingerprint);
+internal sealed record PreparedPolicy(Guid User, string Device, Guid Item, string Source, int AudioIndex, string Fingerprint)
+{
+    internal string? OfferedDevice { get; init; }
+    internal string OfferedDeviceState { get; init; } = "unavailable";
+
+    // This is the native response's transport field, never a replacement authentication identity.
+    // Parse once with ASP.NET query semantics, including '+' and percent escapes. Do not normalize opaque IDs.
+    internal PreparedPolicy WithNativeOffer(string? url)
+    {
+        if (url is null || url.Length > 32768 || !url.StartsWith("/", StringComparison.Ordinal)
+            || url.StartsWith("//", StringComparison.Ordinal) || url.Contains('#')) return this;
+        var start = url.IndexOf('?');
+        var query = QueryHelpers.ParseQuery(start < 0 ? "" : url[start..]);
+        if (!query.TryGetValue("DeviceId", out var values)) return this with { OfferedDeviceState = "missing" };
+        if (values.Count != 1) return this with { OfferedDeviceState = "ambiguous" };
+        var device = values[0];
+        return string.IsNullOrWhiteSpace(device) || device.Length > 512 || device.Any(char.IsControl)
+            ? this with { OfferedDeviceState = "invalid" }
+            : this with { OfferedDevice = device, OfferedDeviceState = "single" };
+    }
+}
 
 /// <summary>Bounded, transient proof of a successfully validated PlaybackInfo policy, never an authorization substitute.</summary>
 public sealed class PlaybackPolicySessions : IDisposable
 {
     private readonly MemoryCache _cache = new(new MemoryCacheOptions { SizeLimit = 256 });
     internal static string Fingerprint(TranscodingRule rule) => Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(rule)));
+    internal static string SessionReference(string? session) => Guid.TryParse(session, out var id) && id != Guid.Empty
+        ? Diagnostics.PluginDiagnostics.Reference(id.ToString("N")) : "missing-or-invalid";
     internal bool Remember(string session, PreparedPolicy policy)
     {
         if (!Guid.TryParse(session, out var id) || id == Guid.Empty) return false;
